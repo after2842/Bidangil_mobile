@@ -11,7 +11,6 @@ struct ContentView: View {
     func signin() {
         print("로그인 버튼이 눌렸습니다.")
        
-        // your login logic here
     }
 
 

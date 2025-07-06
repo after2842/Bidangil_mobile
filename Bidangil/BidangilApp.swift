@@ -12,6 +12,7 @@ struct BidangilApp: App {
     var body: some Scene {
         WindowGroup {
             ContentView()
+    
         }
     }
 }

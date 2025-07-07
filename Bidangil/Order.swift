@@ -494,7 +494,7 @@ struct DropDownDemo: View {
 
     var body: some View {
         DisclosureGroup(
-            "지도",
+            "더보기",
             isExpanded: $isOpen              // toggle when tapped
         ) {
             VStack(alignment: .leading, spacing: 8) {
@@ -508,7 +508,7 @@ struct DropDownDemo: View {
                 .fill(Color(.systemGray6))
         )
         .animation(.easeInOut, value: isOpen) // smooth open/close
-        .padding(.horizontal)
+        .padding(.horizontal,20)
     }
 }
 

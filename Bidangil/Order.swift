@@ -62,10 +62,12 @@ struct OrderCardView: View {
 }
 
 struct CustomFormView: View {
+    
     @State var name: String = ""
     @State var phone: String = ""
     @State var address_1: String = ""
     @State var address_2: String = ""
+    @State var city: String = ""
     @State var state: String = ""
     @State var zipcode: String = ""
     
@@ -75,12 +77,14 @@ struct CustomFormView: View {
     @State private var items: [OrderItem] = [OrderItem()]
     
     @State private var errorMessage: String?
-    var fullAddress: String {
-        // skip blanks → no extra commas/spaces
-        [address_1, address_2, state, zipcode]
-            .filter { !$0.isEmpty }
-            .joined(separator: ", ")
+    
+    @State private var errmessage: String = "한개 이상의 주문이 필요합니다."
+    private var completedItems: [OrderItem] {
+        items.filter {
+            !$0.urlText.isEmpty && !$0.optionText.isEmpty
+        }
     }
+
     
     
     var body: some View {
@@ -106,58 +110,12 @@ struct CustomFormView: View {
                     if step==1{
                         NameandEmail(name: $name, phone: $phone).transition(.opacity)
                     }else if step==2{
-                        Address(address_1: $address_1, address_2: $address_2, state: $state, zipcode: $zipcode).transition(.opacity)
+                        Address(address_1: $address_1, address_2: $address_2, city:$city, state: $state, zipcode: $zipcode).transition(.opacity)
                     }else if step == 3{
                         OrderPage(items: $items).transition(.opacity)
                     }else if step == 4{
                         ScrollView{
-                            VStack(alignment: .leading){
-                                if items.isEmpty{
-                                    EmptyView()
-                                }else{
-                                    Text("신청 내역").font(.title).fontWeight(.heavy).foregroundColor(.black).padding(.bottom,10).padding(.horizontal).font(.title)
-                                    ForEach(items, id: \.id){ item in
-                                        VStack(alignment:.leading){
-                                            HStack{
-                                                Image(systemName: "globe").foregroundColor(.blue)
-                                                Text(item.urlText)
-                                            }
-                                            HStack{
-                                                Image(systemName: "shippingbox.fill").foregroundColor(.blue)
-                                                Text(item.optionText).foregroundColor(.blue).opacity(0.5)
-                                                
-                                            }
-                                
-
-                                        }.padding()
-                                        .background(RoundedRectangle(cornerRadius: 10).fill(Color(.systemGray6)).padding(.vertical,6))
- 
-                                    }.padding(.horizontal,20)
-                                    
-                                    Text("배송 정보").font(.title).fontWeight(.heavy).foregroundColor(.black).padding(.bottom,10).padding(.horizontal).font(.title).padding(.top ,20)
-                                    
-                                    
-                                    
-                                    VStack(alignment: .leading){
-                                        Text(name).padding(.vertical,4)
-                                        Text(phone).padding(.vertical,4)
-                                        Text(fullAddress).padding(.vertical,4)
-                                    }.padding().padding(.vertical,6).frame(maxWidth: .infinity, alignment: .center)                                      .background(RoundedRectangle(cornerRadius: 10).fill(Color(.systemGray6))).padding(.horizontal,20)
-
-                                }
-                                DropDownDemo()
-                                
-                                VStack(alignment:.leading){
-                                    Text("")
-                                    VStack{
-                                        MapPhotoView().frame(width: UIScreen.main.bounds.width*0.9,height: UIScreen.main.bounds.width*0.5)
-                                    }.frame(maxWidth: .infinity, alignment: .center)
-                                }.padding(.top,40)
-
-                                    
-
-
-                            }
+                            FinalReviewView(items: $items, name: $name, phone: $phone, address_1: $address_1, address_2: $address_2, city: $city, state: $state, zipcode: $zipcode).transition(.opacity)
                         }.scrollIndicators(.hidden).padding(.top,30)
 
 
@@ -175,7 +133,7 @@ struct CustomFormView: View {
                             step += 1
                         }
                     }else if step == 2{
-                        if address_1.isEmpty || state.isEmpty || zipcode.isEmpty{
+                        if address_1.isEmpty || state.isEmpty || zipcode.isEmpty || city.isEmpty{
                             errorMessage = "주소 정보를 확인해주세요."
                         }
                         else{
@@ -183,7 +141,13 @@ struct CustomFormView: View {
                             step += 1
                         }
                     }else if step == 3{
-                        step += 1
+                        if completedItems.isEmpty {
+                            errorMessage = "한개 이상의 상품을 주문해주세요."
+                        }else{
+                            errorMessage=nil
+                            step += 1
+                        }
+                        
                     }else{
                         submitForm()
                     }
@@ -280,6 +244,7 @@ struct NameandEmail: View {
 struct Address:View{
     @Binding var address_1:String
     @Binding var address_2:String
+    @Binding var city:String
     @Binding var state:String
     @Binding var zipcode:String
     
@@ -303,15 +268,24 @@ struct Address:View{
                             .background(Color(.systemGray6))
                             .cornerRadius(8)
                             .frame(width: UIScreen.main.bounds.width * 0.44)
-                        StateSelector(selectedState: $state)
+                        TextField("도시", text: $city)
+                            .padding()
+                            .background(Color(.systemGray6))
+                            .cornerRadius(8)
                             .frame(width: UIScreen.main.bounds.width * 0.44)
-                    }
 
-                    TextField("우편번호", text: $zipcode)
-                        .padding()
-                        .background(Color(.systemGray6))
-                        .cornerRadius(8)
-                        .frame(width: UIScreen.main.bounds.width * 0.9)
+                    }
+                    HStack{
+                        StateSelector(selectedState: $state)
+           
+                        TextField("우편번호", text: $zipcode)
+                            .padding()
+                            .background(Color(.systemGray6))
+                            .cornerRadius(8)
+                            .frame(width: UIScreen.main.bounds.width * 0.44)
+                    }.padding(.horizontal, 10)
+
+
                 }
                      
 
@@ -356,23 +330,18 @@ struct StateSelector: View {
 
 struct OrderPage: View {
     @Binding var items: [OrderItem]
+
     var body: some View {
      
 
         ScrollView {
-            if items.count == 1 {
-                VStack{
-                    Spacer(minLength: 200)
-                    OrderCardView(item: $items[0])
-                    Spacer()
+
+            VStack(spacing: 20) {
+                ForEach($items) { $item in
+                    OrderCardView(item: $item)
                 }
-            }else{
-                VStack(spacing: 20){
-                    ForEach($items){$item in
-                        OrderCardView(item: $item)
-                    }
-                }.padding(.top,30)
             }
+            .padding(.vertical)
             
 
             
@@ -413,7 +382,7 @@ struct MapPhotoView: View {
                         .cornerRadius(12)
                     Image(systemName: "mappin").foregroundColor(.blue)
                 }
-
+	
             } else {
                 RoundedRectangle(cornerRadius: 20).background(Color.gray).foregroundColor(.gray)
             }
@@ -428,7 +397,96 @@ struct MapPhotoView: View {
     }
 }
 
+struct FinalReviewView: View {
+    let labelWidth: CGFloat = 70
+    @Binding var items: [OrderItem]
+    @Binding var name: String
+    @Binding var phone: String
+    @Binding var address_1: String
+    @Binding var address_2: String
+    @Binding var city: String
+    @Binding var state: String
+    @Binding var zipcode: String
+    
+    var fullAddress: String {
+        let line1 = [address_1, address_2]
+            .filter { !$0.isEmpty }
+            .joined(separator: " ")
 
+        let line2 = [city, state, zipcode]
+            .filter { !$0.isEmpty }
+            .joined(separator: ", ")
+        
+        var fullAddress: String {
+            [line1, line2]
+                .filter { !$0.isEmpty }
+                .joined(separator: "\n")   // ← newline instead of “, ”
+        }
+        return fullAddress
+    }
+    var body: some View {
+        VStack(alignment: .leading){
+            if items.isEmpty{
+                EmptyView()
+            }else{
+                Text("신청 내역").font(.title).fontWeight(.heavy).foregroundColor(.black).padding(.bottom,10).padding(.horizontal).font(.title)
+                ForEach(items.filter {
+                    !$0.urlText.isEmpty
+                 &&
+                    !$0.optionText.isEmpty
+                }, id: \.id){ item in
+                    VStack(alignment:.leading){
+                        HStack{
+                            Image(systemName: "globe").foregroundColor(.blue)
+                            Text(item.urlText)
+                        }
+                        HStack{
+                            Image(systemName: "shippingbox.fill").foregroundColor(.blue)
+                            Text(item.optionText).foregroundColor(.blue).opacity(0.5)
+                            
+                        }
+            
+
+                    }.padding()
+                    .background(RoundedRectangle(cornerRadius: 10).fill(Color(.systemGray6)).padding(.vertical,6))
+
+                }.padding(.horizontal,20)
+                
+                Text("배송 정보").font(.title).fontWeight(.heavy).foregroundColor(.black).padding(.bottom,10).padding(.horizontal).font(.title).padding(.top ,20)
+                
+                
+                
+                VStack(alignment: .leading){
+                    HStack(){
+                        Text("이름").frame(width: labelWidth, alignment: .leading) .fontWeight(.bold)
+                        Text(name)
+                    }.padding(.vertical,4)
+                    HStack(){
+                        Text("전화번호").frame(width: labelWidth, alignment: .leading)
+                            .fontWeight(.bold)
+                        Text(phone)
+                        
+                    }.padding(.vertical,4)
+                    HStack(alignment:.top){
+                        Text("배송주소").fontWeight(.bold).frame(width: labelWidth, alignment: .leading).fontWeight(.bold)
+                        Text(fullAddress)
+                    }.padding(.vertical,4)
+                    
+                    
+                    
+
+                }.padding(.vertical,12).frame(maxWidth: .infinity, alignment: .center)                                      .background(RoundedRectangle(cornerRadius: 10).fill(Color(.systemGray6))).padding(.horizontal,20)
+
+            }
+            DropDownDemo()
+            
+
+
+        }
+        
+     
+    }
+}
 /// Builds a snapshot image with a pin at the given address.
 final class MapSnapshotter {
     
@@ -499,6 +557,8 @@ struct DropDownDemo: View {
         ) {
             VStack(alignment: .leading, spacing: 8) {
                 MapPhotoView()
+                Text("신청 시점의 환율이 적용됩니다.").fontWeight(.light)
+                Text("신청 후 요청하신 상품의 가격과 통관 정보를 종합하여 결제합니다.").fontWeight(.light)
             }
             .padding(.top, 4)
         }

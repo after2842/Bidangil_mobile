@@ -6,10 +6,76 @@
 //
 
 import SwiftUI
+import Foundation
+
+// 1. Change this to your Django URL.
+//    • Simulator  : "http://127.0.0.1:8000"
+//    • Real phone : "http://YOUR-MAC-IP:8000"
+let baseURL = "http://127.0.0.1:8000"
+
+// 2. What we expect back from Django
+struct Tokens: Decodable {
+    let access:  String
+    let refresh: String
+}
+
+// 3. One simple async/await login function
+func login(email: String, password: String) async -> Tokens? {
+    // Build URL  →  http://127.0.0.1:8000/api/token/
+    guard let url = URL(string: "\(baseURL)/api/token/") else {
+        print("Bad baseURL")
+        return nil
+    }
+
+    // Build POST request with JSON body
+    var req = URLRequest(url: url)
+    req.httpMethod = "POST"
+    req.setValue("application/json", forHTTPHeaderField: "Content-Type")
+    req.httpBody = try? JSONEncoder().encode(["username": email, "password": password])
+
+    do {
+        let (data, response) = try await URLSession.shared.data(for: req)
+        let http = response as! HTTPURLResponse
+
+        if http.statusCode == 200 {
+            // success path
+            if let tok = try? JSONDecoder().decode(Tokens.self, from: data) {
+                return tok
+            } else {
+                print("✅ 200 but JSON didn’t match Tokens")
+                return nil
+            }
+        } else {
+            // --- print the server’s error message ---
+            if let json = try? JSONSerialization.jsonObject(with: data) {
+                print("❌ \(http.statusCode) JSON error:", json)
+            } else if let text = String(data: data, encoding: .utf8) {
+                print("❌ \(http.statusCode) plain error:", text)
+            } else {
+                print("❌ \(http.statusCode) (no body)")
+            }
+            return nil
+        }
+    } catch {
+        print("Network or decode error:", error.localizedDescription)
+        return nil
+    }
+}
+
+// 4. How to use it
+func loginExample() async {
+    if let tokens = await login(email: "sam@example.com", password: "My$trongPa55") {
+        print("✅ Access token:", tokens.access)
+        print("✅ Refresh token:", tokens.refresh)
+        
+    } else {
+        print("❌ Login failed")
+    }
+}
 
 struct ContentView: View {
     func signin() {
-        print("로그인 버튼이 눌렸습니다.")
+        print("sign-up 버튼이 눌렸습니다.")
        
     }
 
@@ -25,13 +91,7 @@ struct ContentView: View {
             
             
         }.padding(.bottom, -10)
-
-
-
         
-        
-        
-            
             
             VStack {
                 NavigationLink(destination:LoginView()){
@@ -114,6 +174,13 @@ struct LoginView: View {
                 .keyboardType(.emailAddress)
             Button(action: {
                 print("Logging in with \(email) / \(password)")
+                Task {
+                    if let tok = await login(email: email, password: password) {
+                        print("✅ logged in! access: \(tok.access)…")
+                    } else {
+                        print( "❌ login failed")
+                    }
+                }
             }) {
                 Text("로그인")
                     .fontWeight(.semibold)

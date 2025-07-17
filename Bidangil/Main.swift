@@ -85,12 +85,11 @@ Spacer()
             .frame(maxWidth: .infinity, maxHeight: .infinity,
                    alignment: .bottom)
             
-            if togglemenu{
-                Rectangle().frame(maxWidth: .infinity, maxHeight: .infinity).edgesIgnoringSafeArea(.all).shadow(radius: 10).foregroundColor(Color.white).ignoresSafeArea().padding(.top,20)
-            }
-           
         }
         .ignoresSafeArea()
+        .fullScreenCover(isPresented: $togglemenu) {
+            ProfileMenuView(isPresented: $togglemenu)
+        }
         
 
 
@@ -306,6 +305,112 @@ struct TopSplashBackground: View {
             .ignoresSafeArea()               // extend under status-bar / notch
     }
 }
-#Preview {
-    MainView()
+
+
+struct ProfileMenuView: View {
+    @Binding var isPresented: Bool
+    @State private var showOrderHistory = false
+    var body: some View {
+        ZStack(alignment: .topTrailing) {
+            Color.white.ignoresSafeArea()
+            VStack(alignment: .leading, spacing: 16) {
+                HStack {
+                    Spacer()
+                    Button(action: { isPresented = false }) {
+                        Image(systemName: "xmark.circle.fill")
+                            .resizable()
+                            .frame(width: 32, height: 32)
+                            .foregroundColor(.blue)
+                            .padding()
+                    }
+                }
+                HStack(){
+                    Image(systemName: "person.fill")
+                        .resizable()
+                        .frame(width: 24, height: 24)
+                        .foregroundColor(.gray)
+                    Text("내 정보")
+                        .font(.system(size: 20))
+                        .padding()
+                }
+                Button(action: { showOrderHistory = true }) {
+                    HStack {
+                        Image(systemName: "cart.fill")
+                            .resizable()
+                            .frame(width: 24, height: 24)
+                            .foregroundColor(.gray)
+                        Text("주문 내역")
+                            .font(.system(size: 20))
+                            .padding()
+                            .foregroundColor(.black)
+                    }
+                }
+                .sheet(isPresented: $showOrderHistory) {
+                    OrderHistoryView(isPresented: $showOrderHistory)
+                }   
+                HStack(){
+                    Image(systemName: "gearshape.fill")
+                        .resizable()
+                        .frame(width: 24, height: 24)
+                        .foregroundColor(.gray)
+                    Text("설정")
+                        .font(.system(size: 20))
+                        .padding()
+                }    
+                HStack(){
+                    Image(systemName: "rectangle.portrait.and.arrow.right")
+                        .resizable()
+                        .frame(width: 24, height: 24)
+                        .foregroundColor(.gray)
+                    Text("로그아웃")
+                        .font(.system(size: 20))
+                        .padding()
+                }   
+                Divider().padding(.horizontal, 20)
+                VStack(alignment: .leading, spacing: 8){
+                    Text("고객상담") 
+                        .font(.system(size: 14))
+                        .padding()
+                
+                    Text("버전 1.0.0") 
+                        .font(.system(size: 14))
+                        .padding()
+                  
+                    Text("개인정보 처리방침")
+                        .font(.system(size: 14))
+                        .padding()
+              
+                    Text("서비스 이용약관")
+                        .font(.system(size: 14))
+                        .padding()
+                }
+                Spacer()
+            }.padding(.leading, 20)
+
+        }
+    }
+}
+struct OrderHistoryView: View {
+    @Binding var isPresented: Bool
+    var body: some View {
+        Image(systemName:"xmark.circle.fill")
+            .resizable()
+            .frame(width: 32, height: 32)
+            .foregroundColor(.blue)
+            .padding()
+            .onTapGesture {
+                isPresented = false
+            }
+        VStack(alignment: .leading, spacing: 16){
+            Text("주문 내역 페이지")
+                .font(.system(size: 20))
+                .padding()
+        }
+
+    }
+}
+struct MainView_Previews: PreviewProvider {
+    static var previews: some View {
+        MainView()
+    }
 }

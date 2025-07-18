@@ -393,6 +393,11 @@ struct ProfileMenuView: View {
 struct OrderHistoryView: View {
     @Binding var isPresented: Bool
     var body: some View {
+        ZStack(alignment: .topTrailing){
+            Color.white.ignoresSafeArea()
+        VStack(alignment: .leading, spacing: 16){ 
+        HStack{
+            Spacer()
         Image(systemName:"xmark.circle.fill")
             .resizable()
             .frame(width: 32, height: 32)
@@ -400,13 +405,21 @@ struct OrderHistoryView: View {
             .padding()
             .onTapGesture {
                 isPresented = false
-            }
-        VStack(alignment: .leading, spacing: 16){
+            }            
+        
+        }
+
+      
             Text("주문 내역 페이지")
                 .font(.system(size: 20))
                 .padding()
         }
-
+        }
+    }
+}
+struct OrderHistoryCard: View {
+    var body: some View {
+        Text("주문번호: 45")
     }
 }
 struct MainView_Previews: PreviewProvider {

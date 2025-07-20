@@ -10,8 +10,14 @@ import MapKit
 import CoreLocation
 
 public struct Order: View {
+    @Binding var currentView: String
+    
+    public init(currentView: Binding<String>) {
+        self._currentView = currentView
+    }
+    
     public var body: some View {
-        CustomFormView()
+        CustomFormView(currentView: $currentView)
     }
 }
 struct OrderItem: Identifiable {
@@ -62,7 +68,7 @@ struct OrderCardView: View {
 }
 
 struct CustomFormView: View {
-    
+    @Binding var currentView: String
     @State var name: String = ""
     @State var phone: String = ""
     @State var address_1: String = ""
@@ -92,6 +98,19 @@ struct CustomFormView: View {
 
 
             VStack() {
+                if step == 1 {
+                    HStack{
+                        Button(action: {
+                            self.currentView = "main"
+                        }) {
+                            
+                                Image(systemName: "arrow.backward").foregroundColor(.black)
+                        }
+                        Spacer()
+                    }.padding(.horizontal)
+
+
+                }
                 if step > 1 {
                     HStack{
                         Button(action: {
@@ -574,5 +593,5 @@ struct DropDownDemo: View {
 
 
 #Preview {
-    Order()
+    Order(currentView: .constant("order"))
 }

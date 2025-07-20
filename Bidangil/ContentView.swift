@@ -7,10 +7,8 @@
 
 import SwiftUI
 import Foundation
+import SwiftKeychainWrapper
 
-// 1. Change this to your Django URL.
-//    • Simulator  : "http://127.0.0.1:8000"
-//    • Real phone : "http://YOUR-MAC-IP:8000"
 let baseURL = "http://127.0.0.1:8000"
 
 // 2. What we expect back from Django
@@ -21,7 +19,7 @@ struct Tokens: Decodable {
 
 // 3. One simple async/await login function
 func login(email: String, password: String) async -> Tokens? {
-    // Build URL  →  http://127.0.0.1:8000/api/token/
+
     guard let url = URL(string: "\(baseURL)/api/token/") else {
         print("Bad baseURL")
         return nil
@@ -62,18 +60,9 @@ func login(email: String, password: String) async -> Tokens? {
     }
 }
 
-// 4. How to use it
-func loginExample() async {
-    if let tokens = await login(email: "sam@example.com", password: "My$trongPa55") {
-        print("✅ Access token:", tokens.access)
-        print("✅ Refresh token:", tokens.refresh)
-        
-    } else {
-        print("❌ Login failed")
-    }
-}
 
 struct ContentView: View {
+    @Binding var currentView: String
     func signin() {
         print("sign-up 버튼이 눌렸습니다.")
        
@@ -94,7 +83,7 @@ struct ContentView: View {
         
             
             VStack {
-                NavigationLink(destination:LoginView()){
+                NavigationLink(destination:LoginView(currentView: $currentView)){
                     Text("로그인")
                         .font(.system(size: 23))
                         .fontWeight(.semibold)
@@ -144,6 +133,7 @@ struct TabView: View {
 
 
 struct LoginView: View {
+    @Binding var currentView: String
     @State private var email: String = ""
     @State private var password: String = ""
 
@@ -176,7 +166,15 @@ struct LoginView: View {
                 print("Logging in with \(email) / \(password)")
                 Task {
                     if let tok = await login(email: email, password: password) {
+                        let access_tok = tok.access
+                        let refresh_tok = tok.refresh
+                        
+                        KeychainWrapper.standard.set(access_tok, forKey: "access_token")
+                        KeychainWrapper.standard.set(refresh_tok, forKey: "refresh_token")
                         print("✅ logged in! access: \(tok.access)…")
+                        DispatchQueue.main.async {
+                            currentView = "main"
+                        }
                     } else {
                         print( "❌ login failed")
                     }
@@ -209,8 +207,15 @@ struct LoginView: View {
 
 
 
-#Preview {
-    ContentView()
-  
+public struct LoginLandingView: View {
+    @Binding var currentView: String
+    
+    public init(currentView: Binding<String>) {
+        self._currentView = currentView
+    }
+    
+    public var body: some View {
+        ContentView(currentView: $currentView)
+    }
 }
 

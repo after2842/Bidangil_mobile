@@ -6,12 +6,289 @@
 //
 import SwiftUI
 
+struct TopSplashShape: Shape {
+    func path(in rect: CGRect) -> Path {
+        var p = Path()
+        p.move(to: .zero)                               // top-left
+        p.addLine(to: CGPoint(x: rect.maxX, y: 0))      // top-right
+        p.addLine(to: CGPoint(x: rect.maxX, y: rect.maxY * 0.65))
+
+        // Wave ①
+        p.addCurve(to: CGPoint(x: rect.midX, y: rect.maxY),
+                   control1: CGPoint(x: rect.maxX * 0.85, y: rect.maxY * 0.9),
+                   control2: CGPoint(x: rect.maxX * 0.65, y: rect.maxY))
+
+        // Wave ②
+        p.addCurve(to: CGPoint(x: 0, y: rect.maxY),
+                   control1: CGPoint(x: rect.maxX * 0.35, y: rect.maxY),
+                   control2: CGPoint(x: rect.maxX * 0.1,  y: rect.maxY * 0.85))
+
+        p.closeSubpath()
+        return p
+    }
+}
+
+struct TopSplashBackground: View {
+    private let splashColor = Color(hue: 0.574,
+                                    saturation: 0.871,
+                                    brightness: 0.935,
+                                    opacity: 0.925)
+
+    var body: some View {
+        TopSplashShape()
+            .fill(splashColor)
+            .frame(height: UIScreen.main.bounds.height / 2)
+            .frame(maxWidth: .infinity, alignment: .top)
+            .ignoresSafeArea()               // extend under status-bar / notch
+    }
+}
+
+struct PastOrder: View {
+    let title: String
+
+    var body: some View {
+        ZStack {
+            RoundedRectangle(cornerRadius: 12)
+                .fill(Color(white: 0.95))
+                .frame(width: UIScreen.main.bounds.width*0.41, height: 50)
+
+            Text(title)
+                .font(.headline)
+                .foregroundColor(.black)
+        }
+    }
+}
+
+struct ProfileMenuView: View {
+    @Binding var isPresented: Bool
+    @State private var showOrderHistory = false
+    @State private var showMyprofile = false
+    @State private var showSettings = false
+    var body: some View {
+        ZStack(alignment: .topTrailing) {
+            Color.white.ignoresSafeArea()
+            VStack(alignment: .leading, spacing: 16) {
+                HStack {
+                    Spacer()
+                    Button(action: { isPresented = false }) {
+                        Image(systemName: "xmark.circle.fill")
+                            .resizable()
+                            .frame(width: 32, height: 32)
+                            .foregroundColor(.blue)
+                            .padding()
+                    }
+                }
+                Button(action: { showMyprofile = true }) {
+                HStack(){
+                    Image(systemName: "person.fill")
+                        .resizable()
+                        .frame(width: 24, height: 24)
+                        .foregroundColor(.gray)
+                    Text("내 정보")
+                        .font(.system(size: 20))
+                        .padding()
+                        .foregroundColor(.black)
+                }
+                }.sheet(isPresented: $showMyprofile) {
+                    MyProfileView(isPresented: $showMyprofile)
+                }
+                Button(action: { showOrderHistory = true }) {
+                    HStack {
+                        Image(systemName: "cart.fill")
+                            .resizable()
+                            .frame(width: 24, height: 24)
+                            .foregroundColor(.gray)
+                        Text("주문 내역")
+                            .font(.system(size: 20))
+                            .padding()
+                            .foregroundColor(.black)
+                    }
+                }
+                .sheet(isPresented: $showOrderHistory) {
+                    OrderHistoryView(isPresented: $showOrderHistory)
+                }   
+                Button(action: { showSettings = true }) {
+                HStack(){
+                    Image(systemName: "gearshape.fill")
+                        .resizable()
+                        .frame(width: 24, height: 24)
+                        .foregroundColor(.gray)
+                    Text("설정")
+                        .font(.system(size: 20))
+                        .padding()
+                        .foregroundColor(.black)
+                }
+                .sheet(isPresented: $showSettings) {
+                    SettingsView(isPresented: $showSettings)
+                }
+                }
+                HStack(){
+                    Image(systemName: "rectangle.portrait.and.arrow.right")
+                        .resizable()
+                        .frame(width: 24, height: 24)
+                        .foregroundColor(.gray)
+                    Text("로그아웃")
+                        .font(.system(size: 20))
+                        .padding()
+                }   
+                Divider().padding(.horizontal, 20)
+                VStack(alignment: .leading, spacing: 8){
+                    Text("고객상담") 
+                        .font(.system(size: 14))
+                        .padding()
+                
+                    Text("버전 1.0.0") 
+                        .font(.system(size: 14))
+                        .padding()
+                  
+                    Text("개인정보 처리방침")
+                        .font(.system(size: 14))
+                        .padding()
+              
+                    Text("서비스 이용약관")
+                        .font(.system(size: 14))
+                        .padding()
+                }
+                Spacer()
+            }.padding(.leading, 20)
+
+        }
+    }
+}
+
+struct OrderHistoryView: View {
+    @Binding var isPresented: Bool
+    var body: some View {
+        ZStack(alignment: .topTrailing){
+            Color.white.ignoresSafeArea()
+        VStack(alignment: .leading, spacing: 16){ 
+        HStack{
+            Spacer()
+        Image(systemName:"minus")
+            .resizable()
+            .frame(width: 32, height: 4)
+            .foregroundColor(.gray)
+            .padding()
+            .onTapGesture {
+                isPresented = false
+            }      
+            Spacer()
+        
+        }
+
+      
+            Text("주문 내역 페이지")
+                .font(.system(size: 20))
+                .padding()
+        }
+        }
+    }
+}
+
+struct MyProfileView: View {
+    @Binding var isPresented: Bool
+    var body: some View {
+        ZStack(alignment: .topTrailing){
+            Color.white.ignoresSafeArea()
+        VStack(alignment: .leading, spacing: 16){ 
+        HStack{
+            Spacer()
+        Image(systemName:"minus")
+            .resizable()
+            .frame(width: 32, height: 4)
+            .foregroundColor(.gray)
+            .padding()
+            .onTapGesture {
+                isPresented = false
+            }      
+            Spacer()
+        
+        }
+
+      
+            Text("내 정보 페이지")
+                .font(.system(size: 20))
+                .padding()
+        }
+        }
+    }
+}
+
+struct SettingsView: View {
+    @Binding var isPresented: Bool
+    var body: some View {
+        ZStack(alignment: .topTrailing){
+            Color.white.ignoresSafeArea()
+        VStack(alignment: .leading, spacing: 16){ 
+        HStack{
+            Spacer()
+        Image(systemName:"minus")
+            .resizable()
+            .frame(width: 32, height: 4)
+            .foregroundColor(.gray)
+            .padding()
+            .onTapGesture {
+                isPresented = false
+            }      
+            Spacer()
+        
+        }
+
+      
+            Text("설정 페이지")
+                .font(.system(size: 20))
+                .padding()
+                .foregroundColor(.black)
+        }
+        }
+    }
+}
+
 
 struct MainView: View {
-    private let columns = [GridItem(.flexible()), GridItem(.flexible())]
-    private var current = 2
-    private let steps = ["주문 접수", "상품결제", "상품구매", "배송비 결제"]
+    @Binding var currentView: String
+    @Binding var nickname: String
+    @Binding var orders: [OrderData]
+    private let steps = ["상품결제", "상품구매", "상품도착", "배송비 결제"]
     @State private var togglemenu: Bool = false
+    @State private var showOrder = false
+    
+    private var lastOrder: OrderData {
+        return orders.last ?? OrderData(id: 0, address: "", order_created_at: "", exchange_rate: "", items: [], payment: nil, delivery: nil, steps: nil)
+    }
+    
+    private var lastOrderBinding: Binding<OrderData> {
+        Binding(
+            get: { self.lastOrder },
+            set: { newValue in
+                if let lastIndex = self.orders.indices.last {
+                    self.orders[lastIndex] = newValue
+                }
+            }
+        )
+    }
+    
+    private var currentStep: Int {
+        guard !orders.isEmpty, let orderSteps = orders[0].steps else { 
+            print("No steps found")
+            return 0 
+        }
+        var count = 0
+        for step in orderSteps {
+            if step.isDone {
+                count += 1
+            }
+        }
+        return count
+    }
+    
+    
+    public init(currentView: Binding<String>, nickname: Binding<String>, orders: Binding<[OrderData]>) {
+        self._currentView = currentView
+        self._nickname = nickname
+        self._orders = orders
+        
+    }
 
 
     var body: some View {
@@ -48,10 +325,11 @@ Spacer()
 
                
                 CurrentOrderCard(
-                    title: "Order #123-456",
-                    progress: .init(steps: steps, currentStep: current),
-          
-                    accent: .blue
+                    title: orders.isEmpty ? "" : String(lastOrder.id),
+                    progress: .init(steps: steps, currentStep: currentStep),
+                    accent: .blue,
+                    order: lastOrderBinding,
+                    
                 )
                 
                 
@@ -66,13 +344,13 @@ Spacer()
 
                 // call-to-action button
                 Button {
-                    print("Cart tapped")
+                    currentView = "order"
                 } label: {
                     Text("주문하기")
-                        .font(.system(size: 25, weight: .medium))
+                        .font(.system(size: 17, weight: .medium))
                         .foregroundColor(Color.white)
                         .frame(maxWidth: .infinity)
-                        .padding(.vertical, 10)
+                        .padding()
                         .background(Color(hue: 0.574,
                                           saturation: 0.871,
                                           brightness: 0.935,
@@ -85,12 +363,14 @@ Spacer()
             .frame(maxWidth: .infinity, maxHeight: .infinity,
                    alignment: .bottom)
             
-            if togglemenu{
-                Rectangle().frame(maxWidth: .infinity, maxHeight: .infinity).edgesIgnoringSafeArea(.all).shadow(radius: 10).foregroundColor(Color.white).ignoresSafeArea().padding(.top,20)
-            }
-           
         }
         .ignoresSafeArea()
+        .fullScreenCover(isPresented: $togglemenu) {
+            ProfileMenuView(isPresented: $togglemenu)
+        }
+        .fullScreenCover(isPresented: $showOrder) {
+            Order(currentView: $currentView)
+        }
         
 
 
@@ -109,49 +389,152 @@ struct CurrentOrderCard: View {
     let title: String
     let progress: OrderProgress
     var accent: Color = .blue
+    @State private var isExpanded: Bool = false
+    @State private var showExpandedContent: Bool = false
+    @Binding var order: OrderData
     
+    private var formattedDate: String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd HH:mm:ss.SSSSSSxxx"
+        formatter.timeZone = TimeZone.current
+        
+        if let date = formatter.date(from: order.order_created_at) {
+            let outputFormatter = DateFormatter()
+            outputFormatter.dateFormat = "MM.dd.yyyy"
+            outputFormatter.timeZone = TimeZone.current
+            return outputFormatter.string(from: date)
+        }
+        return order.order_created_at
+    }
+    
+    private var formattedAddress: (String, String, String) {
+        print("🔍 Debug - order.address: '\(order.address)'")
+        let components = order.address.components(separatedBy: "\n")
+        let filteredComponents = components.filter { !$0.trimmingCharacters(in: .whitespaces).isEmpty }
+        print("🔍 Debug - filteredComponents count: \(filteredComponents.count)")
+        print("🔍 Debug - filteredComponents: \(filteredComponents)")
+        
+        guard filteredComponents.count >= 3 else {
+            return ("주소 정보 로딩 중...", "", "")
+        }
+
+        if filteredComponents.count == 5 {
+            let firstPart: String = filteredComponents[0]
+            let secondPart: String = filteredComponents[1]
+            let thirdPart:[String] = Array(filteredComponents.suffix(3))
+            return (firstPart, secondPart, thirdPart.joined(separator: ", "))
+        }
+        if filteredComponents.count == 4 {
+            let firstPart: String = filteredComponents[0]
+            let secondPart: String = Array(filteredComponents.suffix(3)).joined(separator: ", ")
+            let thirdPart: String = ""
+            return (firstPart, secondPart, thirdPart)
+        }
+        return ("주소 정보 로딩 중...", "", "")
+    }
     // Keep the dot size in one place so the layout is predictable
     private let dotSize: CGFloat = 18
     
     var body: some View {
         ZStack {
             RoundedRectangle(cornerRadius: 12)
-                .fill(        LinearGradient(stops: [
-                    .init(color: Color.blue,  location: 0.00),   // top colour
-                    .init(color: Color.blue,  location: 0.33),   //      ─┤
-                    .init(color: Color(white: 0.95), location: 0.33),   // bottom colour
+                .fill(LinearGradient(stops: [
+                    .init(color: Color.blue, location: 0.00),
+                    .init(color: Color.blue, location: isExpanded ? 1.00 : 0.33),
+                    .init(color: Color(white: 0.95), location: isExpanded ? 1.01 : 0.33),
                     .init(color: Color(white: 0.95), location: 1.00)
                 ], startPoint: .top, endPoint: .bottom))
+                .animation(.easeInOut(duration: 0.3), value: isExpanded)
             
             
             
             VStack{
+                if !isExpanded {
                 VStack{
-                    HStack{                    Image(systemName: "house.fill")
-                        .foregroundColor(.white)
-                    Text("3630 Westminister Ave")
-                        .font(.caption)
-                    
-                    
-                    
-                }
-                    HStack{                                  Image(systemName: "tag.fill")
+                    HStack{                                  
+                        Image(systemName: "tag.fill")
                             .foregroundColor(.white)
-                        Text("에이블리, 무신사 외3")
+                        Text("dualsonic.com, spao.com 외 2개")
                             .font(.caption)
                             .multilineTextAlignment(.center)
                             .foregroundColor(.white)
                     }
-                    
-                    
-                }.padding(.top, 8)
+                    .padding(.top, 20)
+                }
+                }else{
+                    VStack(alignment: .leading, spacing: 16){
+                       
+                        if showExpandedContent {
+                            Text("주문번호: \(order.id)")
+                                .font(.subheadline)
+                                .foregroundColor(.black)
+                                .transition(.opacity)
+                                .frame(maxWidth: .infinity, alignment: .trailing)
+                                .padding(.bottom, 4)
+                            HStack(alignment: .top){
+                            Text("주문일")
+                                .font(.headline)
+                                .foregroundColor(.white)
+                                .transition(.opacity)
+                            Spacer()
+                            Text("\(formattedDate)")
+                                .font(.headline)
+                                .foregroundColor(.white)
+                                .transition(.opacity)
+                            }
+                            HStack(alignment: .top){
+                            Text("적용환율")
+                                .font(.headline)
+                                .foregroundColor(.white)
+                                .transition(.opacity)
+                            Spacer()
+                            Text("\(order.exchange_rate)원")
+                                .font(.headline)
+                                .foregroundColor(.white)
+                                .transition(.opacity)
 
+                            }
+                            HStack(alignment: .top){
+                            Text("배송주소")
+                                .font(.headline)
+                                .foregroundColor(.white)
+                                .transition(.opacity)
+                                
+                            Spacer()
+                            VStack(alignment: .trailing){
+                            Text("\(formattedAddress.0)")
+                                .font(.headline)
+                                .foregroundColor(.white)
+                                .transition(.opacity)
+                            Text("\(formattedAddress.1)")
+                                .font(.headline)
+                                .foregroundColor(.white)
+                                .transition(.opacity)     
+                                  
+                            Text("\(formattedAddress.2)")
+                                .font(.headline)
+                                .foregroundColor(.white)
+                                .transition(.opacity)
+                            }
+                              
+                            }
+                            Text("주문 상품").frame(maxWidth: .infinity, alignment: .center).font(.headline)
+                            .foregroundColor(.white).transition(.opacity)
+                            .padding(.top, 8)
+                        }
+                       
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding()
 
+                  // 33% of the blue zone
+                }
                 Spacer()
 
                 
                 VStack(spacing: 8) {
                     // ─── Row 1: dots + connectors ───
+                    if !isExpanded {
                     HStack(spacing: 0) {
                         ForEach(progress.steps.indices, id: \.self) { index in
                             // dot column
@@ -192,15 +575,30 @@ struct CurrentOrderCard: View {
                         }
                     }
                     .padding(.horizontal, 0)
+                    }
                     
                    
                 }
 Spacer()
             }
         }
-        .frame(width: UIScreen.main.bounds.width*0.85, height: UIScreen.main.bounds.height*0.2)
+        .frame(width: UIScreen.main.bounds.width*0.85, height: isExpanded ? UIScreen.main.bounds.height*0.4 : UIScreen.main.bounds.height*0.2)
+        .animation(.easeInOut(duration: 0.3), value: isExpanded)
+        .onTapGesture {
+            isExpanded.toggle()
+            if isExpanded {
+                // Show text after animation starts
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.27) {
+                    showExpandedContent = true
+                }
+            } else {
+                // Hide text immediately when collapsing
+                showExpandedContent = false
+            }
+        }
     }
 }
+
 
 
 
@@ -221,19 +619,9 @@ private struct StepDot: View {
     }
 }
 
-struct PastOrder: View {
-    let title: String
-
+struct OrderHistoryCard: View {
     var body: some View {
-        ZStack {
-            RoundedRectangle(cornerRadius: 12)
-                .fill(Color(white: 0.95))
-                .frame(width: UIScreen.main.bounds.width*0.41, height: 50)
-
-            Text(title)
-                .font(.headline)
-                .foregroundColor(.black)
-        }
+        Text("주문번호: 45")
     }
 }
 
@@ -268,44 +656,4 @@ struct AddressInputView: View {
         }
         .padding()
     }
-}
-
-struct TopSplashShape: Shape {
-    func path(in rect: CGRect) -> Path {
-        var p = Path()
-        p.move(to: .zero)                               // top-left
-        p.addLine(to: CGPoint(x: rect.maxX, y: 0))      // top-right
-        p.addLine(to: CGPoint(x: rect.maxX, y: rect.maxY * 0.65))
-
-        // Wave ①
-        p.addCurve(to: CGPoint(x: rect.midX, y: rect.maxY),
-                   control1: CGPoint(x: rect.maxX * 0.85, y: rect.maxY * 0.9),
-                   control2: CGPoint(x: rect.maxX * 0.65, y: rect.maxY))
-
-        // Wave ②
-        p.addCurve(to: CGPoint(x: 0, y: rect.maxY),
-                   control1: CGPoint(x: rect.maxX * 0.35, y: rect.maxY),
-                   control2: CGPoint(x: rect.maxX * 0.1,  y: rect.maxY * 0.85))
-
-        p.closeSubpath()
-        return p
-    }
-}
-
-struct TopSplashBackground: View {
-    private let splashColor = Color(hue: 0.574,
-                                    saturation: 0.871,
-                                    brightness: 0.935,
-                                    opacity: 0.925)
-
-    var body: some View {
-        TopSplashShape()
-            .fill(splashColor)
-            .frame(height: UIScreen.main.bounds.height / 2)
-            .frame(maxWidth: .infinity, alignment: .top)
-            .ignoresSafeArea()               // extend under status-bar / notch
-    }
-}
-#Preview {
-    MainView()
 }

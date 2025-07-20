@@ -6,6 +6,10 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		C953DE6B2E2702B500BFD843 /* SwiftKeychainWrapper in Frameworks */ = {isa = PBXBuildFile; productRef = C953DE6A2E2702B500BFD843 /* SwiftKeychainWrapper */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXContainerItemProxy section */
 		C9340AE12E0B7845003615EC /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -52,6 +56,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				C953DE6B2E2702B500BFD843 /* SwiftKeychainWrapper in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -112,6 +117,7 @@
 			);
 			name = Bidangil;
 			packageProductDependencies = (
+				C953DE6A2E2702B500BFD843 /* SwiftKeychainWrapper */,
 			);
 			productName = Bidangil;
 			productReference = C9340AD32E0B7844003615EC /* Bidangil.app */;
@@ -195,6 +201,9 @@
 			);
 			mainGroup = C9340ACA2E0B7844003615EC;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				C953DE692E27027400BFD843 /* XCRemoteSwiftPackageReference "SwiftKeychainWrapper" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = C9340AD42E0B7844003615EC /* Products */;
 			projectDirPath = "";
@@ -550,6 +559,25 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		C953DE692E27027400BFD843 /* XCRemoteSwiftPackageReference "SwiftKeychainWrapper" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/jrendel/SwiftKeychainWrapper";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 4.0.1;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		C953DE6A2E2702B500BFD843 /* SwiftKeychainWrapper */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = C953DE692E27027400BFD843 /* XCRemoteSwiftPackageReference "SwiftKeychainWrapper" */;
+			productName = SwiftKeychainWrapper;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = C9340ACB2E0B7844003615EC /* Project object */;
 }

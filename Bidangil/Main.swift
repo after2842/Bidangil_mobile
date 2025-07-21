@@ -324,13 +324,26 @@ struct MainView: View {
 Spacer()
 
                
-                CurrentOrderCard(
-                    title: orders.isEmpty ? "" : String(lastOrder.id),
-                    progress: .init(steps: steps, currentStep: currentStep),
-                    accent: .blue,
-                    order: lastOrderBinding,
+                // Show CurrentOrderCard with a real binding if possible, else use a constant
+                if let lastIndex = orders.indices.last {
+                    Text("dd")
+                    CurrentOrderCard(
+                        title: String(orders[lastIndex].id),
+                        progress: .init(steps: steps, currentStep: currentStep),
+                        accent: .blue,
+                        order: $orders[lastIndex],
+                        
+                    )
                     
-                )
+                } else {
+                    Text("dd2")
+                    CurrentOrderCard(
+                        title: "",
+                        progress: .init(steps: steps, currentStep: 0),
+                        accent: .blue,
+                        order: .constant(OrderData(id: 0, address: "", order_created_at: "", exchange_rate: "", items: [], payment: nil, delivery: nil, steps: nil))
+                    )
+                }
                 
                 
                 HStack{PastOrder(title: "이전 주문")
@@ -518,9 +531,28 @@ struct CurrentOrderCard: View {
                             }
                               
                             }
-                            Text("주문 상품").frame(maxWidth: .infinity, alignment: .center).font(.headline)
+                            Text("📦주문 상품").frame(maxWidth: .infinity, alignment: .center).font(.headline)
                             .foregroundColor(.white).transition(.opacity)
                             .padding(.top, 8)
+                            
+                            ForEach(order.items) { item in
+                            
+                            VStack(spacing: 4){
+                            VStack(alignment: .leading, spacing: 2){
+                                Text(item.url)
+                                    .font(.subheadline)
+                                    .foregroundColor(.white)
+                                    .transition(.opacity)
+                                Text(item.description)
+                                    .font(.subheadline)
+                                    .foregroundColor(.white)
+                                    .transition(.opacity)
+                            }
+                            }
+                            
+                            }
+
+                            
                         }
                        
                     }

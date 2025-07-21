@@ -57,7 +57,8 @@ struct OrderData: Codable, Identifiable {
     let steps: [StepData]?
 }
 
-struct OrderItemData: Codable {
+struct OrderItemData: Codable, Identifiable {
+    let id: UUID = UUID()
     let url: String
     let description: String
 }
@@ -120,6 +121,7 @@ class UserSessionManager: ObservableObject, @unchecked Sendable {
             print("Profile data loaded\(response)")
         } catch {
             print("❌ Failed to load profile: \(error.localizedDescription)")
+            print("❌ Failed to load profile: \(error)")
         }
     }
 }

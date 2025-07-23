@@ -326,7 +326,7 @@ Spacer()
                
                 // Show CurrentOrderCard with a real binding if possible, else use a constant
                 if let lastIndex = orders.indices.last {
-                    Text("dd")
+         
                     CurrentOrderCard(
                         title: String(orders[lastIndex].id),
                         progress: .init(steps: steps, currentStep: currentStep),
@@ -336,7 +336,7 @@ Spacer()
                     )
                     
                 } else {
-                    Text("dd2")
+             
                     CurrentOrderCard(
                         title: "",
                         progress: .init(steps: steps, currentStep: 0),

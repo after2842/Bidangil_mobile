@@ -5,6 +5,7 @@
 //  Created by Samuel Choi on 6/24/25.
 //
 import SwiftUI
+import StripePaymentSheet
 
 struct TopSplashShape: Shape {
     func path(in rect: CGRect) -> Path {
@@ -44,6 +45,7 @@ struct TopSplashBackground: View {
 }
 
 struct PastOrder: View {
+   
     let title: String
 
     var body: some View {
@@ -329,7 +331,7 @@ struct MainView: View {
                 .padding(.top, 60)
                 .padding(.horizontal)
              
-Spacer()
+                Spacer()
 
                
                 // Show CurrentOrderCard with a real binding if possible, else use a constant
@@ -364,7 +366,13 @@ Spacer()
 
 
                 // call-to-action button
-                Button {
+
+            }
+            .padding(.horizontal)
+            .padding(.bottom, 55)
+            .frame(maxWidth: .infinity, maxHeight: .infinity,
+                   alignment: .bottom)
+            Button {
                     currentView = "order"
                 } label: {
                     Text("주문하기")
@@ -377,12 +385,10 @@ Spacer()
                                           brightness: 0.935,
                                           opacity: 0.925))
                         .cornerRadius(100)
-                }
-            }
-            .padding(.horizontal)
-            .padding(.bottom, 55)
-            .frame(maxWidth: .infinity, maxHeight: .infinity,
-                   alignment: .bottom)
+                }.padding(.horizontal)
+                .padding(.bottom, 55)
+                .frame(maxWidth: .infinity, maxHeight: .infinity,
+                       alignment: .bottom)
             
         }
         .ignoresSafeArea()
@@ -487,7 +493,7 @@ struct CurrentOrderCard: View {
                        
                         if showExpandedContent {
                             Text("주문번호: \(order.id)")
-                                .font(.subheadline)
+                                .font(.system(size: 12))
                                 .foregroundColor(.black)
                                 .transition(.opacity)
                                 .frame(maxWidth: .infinity, alignment: .trailing)
@@ -542,12 +548,14 @@ struct CurrentOrderCard: View {
                             Text("📦주문 상품").frame(maxWidth: .infinity, alignment: .center).font(.headline)
                             .foregroundColor(.white).transition(.opacity)
                             .padding(.top, 8)
-                            
+
+                            ScrollView(.vertical, showsIndicators: false){
+                            VStack(alignment: .leading, spacing: 4){
                             ForEach(order.items) { item in
-                            
-                            VStack(spacing: 4){
-                            VStack(alignment: .leading, spacing: 2){
-                                Text(item.url)
+                           
+                          
+                            VStack(alignment: .leading){
+                                Text(item.url.count > 30 ? String(item.url.prefix(30)) + "..." : item.url)
                                     .font(.subheadline)
                                     .foregroundColor(.white)
                                     .transition(.opacity)
@@ -555,11 +563,13 @@ struct CurrentOrderCard: View {
                                     .font(.subheadline)
                                     .foregroundColor(.white)
                                     .transition(.opacity)
-                            }
-                            }
+                            }.padding(.bottom, 4)
+                            
+                            
                             
                             }
-
+                            }
+                            }
                             
                         }
                        
@@ -622,7 +632,7 @@ struct CurrentOrderCard: View {
 Spacer()
             }
         }
-        .frame(width: UIScreen.main.bounds.width*0.85, height: isExpanded ? UIScreen.main.bounds.height*0.4 : UIScreen.main.bounds.height*0.2)
+        .frame(width: UIScreen.main.bounds.width*0.85, height: isExpanded ? UIScreen.main.bounds.height*0.5 : UIScreen.main.bounds.height*0.2)
         .animation(.easeInOut(duration: 0.3), value: isExpanded)
         .onTapGesture {
             isExpanded.toggle()

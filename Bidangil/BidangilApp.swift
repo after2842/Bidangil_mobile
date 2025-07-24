@@ -8,12 +8,15 @@
 import SwiftUI
 import Foundation
 import SwiftKeychainWrapper
-
+import StripePaymentSheet
 @main
 struct BidangilApp: App {
     @State public var currentView: String = "login" 
     @State public var usrData: Bool = false
     @StateObject private var sessionManager = UserSessionManager()
+    
+    init() {StripeAPI.defaultPublishableKey = "pk_test_51PtQWTC3qQke2faE0Bp08gJUbuyVxPbqYrYbkpMU6GaVNInI4gaJblF7x98IJddLwkI9CUGTipocwFyPJhum9moT00cNtFKwfp"}
+    
     var body: some Scene {
         WindowGroup {
             switch currentView {

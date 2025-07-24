@@ -235,7 +235,15 @@ struct SettingsView: View {
         }
 
       
-            Text("설정 페이지")
+            Text("알림설정")
+                .font(.system(size: 20))
+                .padding()
+                .foregroundColor(.black)
+            Text("개인정보 및 보안")
+                .font(.system(size: 20))
+                .padding()
+                .foregroundColor(.black)
+            Text("결제수단")
                 .font(.system(size: 20))
                 .padding()
                 .foregroundColor(.black)

@@ -436,11 +436,9 @@ struct CurrentOrderCard: View {
     }
     
     private var formattedAddress: (String, String, String) {
-        print("🔍 Debug - order.address: '\(order.address)'")
+        print("Debug - order.address: '\(order.address)'")
         let components = order.address.components(separatedBy: "\n")
         let filteredComponents = components.filter { !$0.trimmingCharacters(in: .whitespaces).isEmpty }
-        print("🔍 Debug - filteredComponents count: \(filteredComponents.count)")
-        print("🔍 Debug - filteredComponents: \(filteredComponents)")
         
         guard filteredComponents.count >= 3 else {
             return ("주소 정보 로딩 중...", "", "")

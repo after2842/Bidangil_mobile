@@ -50,6 +50,7 @@ struct PastOrder: View {
 
     var body: some View {
         ZStack {
+            CheckoutView()
             RoundedRectangle(cornerRadius: 12)
                 .fill(Color(white: 0.95))
                 .frame(width: UIScreen.main.bounds.width*0.41, height: 50)
@@ -705,5 +706,75 @@ struct AddressInputView: View {
             Spacer()
         }
         .padding()
+    }
+}
+
+
+struct CheckoutView: View {
+    @State private var paymentSheet: PaymentSheet?
+    @State private var isLoading = false
+    @State private var alert: AlertItem?
+
+    var body: some View {
+        Button("Pay $9.99") { loadPaymentSheet() }
+            .disabled(isLoading)
+            .alert(item: $alert) { $0.alert }
+    }
+
+    /// 1️⃣ Talk to Django
+    private func loadPaymentSheet() {
+        isLoading = true
+        Task {
+            do {
+                let url = URL(string: "http://127.0.0.1:8000/api/mobile_intent")!
+                var req = URLRequest(url: url); req.httpMethod = "POST"
+                req.httpBody = try JSONEncoder().encode(["order_id": "24"])
+                req.setValue("application/json", forHTTPHeaderField: "Content-Type")
+
+                let (data, _) = try await URLSession.shared.data(for: req)
+                let secret = try JSONDecoder().decode(Response.self, from: data).clientSecret
+
+                /// 2️⃣ Configure sheet
+                var config = PaymentSheet.Configuration()
+                config.merchantDisplayName = "Bidangil"
+                config.applePay = .init(merchantId: "merchant.co.bidangil", merchantCountryCode: "US")   // optional
+                paymentSheet = PaymentSheet(paymentIntentClientSecret: secret,
+                                            configuration: config)
+                isLoading = false
+
+                /// 3️⃣ Present
+                if let sheet = paymentSheet,
+                   let root = UIApplication.shared.firstKeyWindow?.rootViewController {
+                    sheet.present(from: root) { result in
+                        switch result {
+                        case .completed:
+                            alert = .init(title: "Paid ✓")
+                        case .canceled:
+                            break
+                        case .failed(let error):
+                            alert = .init(title: "Payment failed", message: error.localizedDescription)
+                        }
+                    }
+                }
+            } catch {
+                isLoading = false
+                alert = .init(title: "Error", message: error.localizedDescription)
+            }
+        }
+    }
+
+    private struct Response: Codable { let clientSecret: String }
+    private struct AlertItem: Identifiable { var id = UUID(); var title: String; var message: String? = nil
+        var alert: Alert { Alert(title: Text(title), message: message.map(Text.init)) }
+    }
+}
+
+// little helper so we don't fight the window hierarchy
+extension UIApplication {
+    var firstKeyWindow: UIWindow? {
+        connectedScenes
+            .compactMap { $0 as? UIWindowScene }
+            .flatMap(\.windows)
+            .first { $0.isKeyWindow }
     }
 }

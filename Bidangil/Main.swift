@@ -51,7 +51,7 @@ struct PastOrder: View {
     var body: some View {
         ZStack {
             CheckoutView()
-            RoundedRectangle(cornerRadius: 12)
+            RoundedRectangle(cornerRadius: 12 )
                 .fill(Color(white: 0.95))
                 .frame(width: UIScreen.main.bounds.width*0.41, height: 50)
 

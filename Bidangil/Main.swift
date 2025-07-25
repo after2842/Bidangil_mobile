@@ -40,7 +40,7 @@ struct TopSplashBackground: View {
             .fill(splashColor)
             .frame(height: UIScreen.main.bounds.height / 2)
             .frame(maxWidth: .infinity, alignment: .top)
-            .ignoresSafeArea()               // extend under status-bar / notch
+            .ignoresSafeArea()               
     }
 }
 

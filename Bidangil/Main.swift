@@ -669,7 +669,7 @@ private struct StepDot: View {
 
 struct OrderHistoryCard: View {
     var body: some View {
-        Text("주문번호: 999")
+        Text("주문번호: 99999")
     }
 }
 

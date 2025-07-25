@@ -44,7 +44,7 @@ func login(email: String, password: String) async -> Tokens? {
                 return nil
             }
         } else {
-            // --- print the server’s error message ---
+            
             if let json = try? JSONSerialization.jsonObject(with: data) {
                 print("❌ \(http.statusCode) JSON error:", json)
                 print("not serializable")

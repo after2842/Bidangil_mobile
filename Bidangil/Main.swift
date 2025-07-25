@@ -610,7 +610,6 @@ struct CurrentOrderCard: View {
                     // ─── Row 2: labels + *placeholder* columns ───
                     HStack(spacing: 0) {
                         ForEach(progress.steps.indices, id: \.self) { index in
-                            // label column
                             Text(progress.steps[index])
                                 .font(.caption)
                                 .foregroundColor(.black)
@@ -618,7 +617,7 @@ struct CurrentOrderCard: View {
                             
                             // placeholder column (same spot as connector above)
                             if index < progress.steps.count - 1 {
-                                Spacer()                      // invisible, takes the width
+                                Spacer()                      
                                     
                             }
                         }

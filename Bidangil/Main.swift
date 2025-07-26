@@ -50,14 +50,14 @@ struct PastOrder: View {
 
     var body: some View {
         ZStack {
-            CheckoutView()
             RoundedRectangle(cornerRadius: 12 )
                 .fill(Color(white: 0.95))
                 .frame(width: UIScreen.main.bounds.width*0.41, height: 50)
-
+            
             Text(title)
                 .font(.headline)
                 .foregroundColor(.black)
+            CheckoutView()
         }
     }
 }
@@ -285,7 +285,8 @@ struct MainView: View {
             return 0 
         }
         var count = 0
-        for step in orderSteps {
+        for step: StepData in orderSteps {
+            print("step: \(step.isDone)")
             if step.isDone {
                 count += 1
             }
@@ -723,7 +724,7 @@ struct CheckoutView: View {
         isLoading = true
         Task {
             do {
-                let url = URL(string: "http://127.0.0.1:8000/api/mobile_intent")!
+                let url = URL(string: "http://127.0.0.1:8000/api/mobile_intent/")!
                 var req = URLRequest(url: url); req.httpMethod = "POST"
                 req.httpBody = try JSONEncoder().encode(["order_id": "24"])
                 req.setValue("application/json", forHTTPHeaderField: "Content-Type")

@@ -602,7 +602,7 @@ struct CurrentOrderCard: View {
                     if !isExpanded {
                     HStack(spacing: 0) {
                         ForEach(progress.steps.indices, id: \.self) { index in
-                            // dot column
+                          
                             StepDot(
                                 isComplete: index <= (progress.currentStep-1)/2,
                                 accent: accent
@@ -612,8 +612,7 @@ struct CurrentOrderCard: View {
                             
                             // connector column (skip after last dot)
                             if index < progress.steps.count - 1 {
-                                ZStack(alignment: .leading) {
-                                    
+                                ZStack(alignment: .leading){  
                                     Rectangle()
                                         .fill(Color.gray.opacity(0.3))
                                         .frame(height: 2)

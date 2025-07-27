@@ -260,12 +260,14 @@ struct MainView: View {
     @Binding var currentView: String
     @Binding var nickname: String
     @Binding var orders: [OrderData]
-    private let steps = ["상품결제", "상품구매", "상품도착", "배송비 결제"]
+    private let steps = ["주문접수","물건도착", "배송출발", "배송완료"]
     @State private var togglemenu: Bool = false
     @State private var showOrder = false
+    @State private var currentStep: Int = 0
+
     
     private var lastOrder: OrderData {
-        return orders.last ?? OrderData(id: 0, address: "", order_created_at: "", exchange_rate: "", items: [], payment: nil, delivery: nil, steps: nil)
+        return orders.last ?? OrderData(id: 0, address: "", order_created_at: "", exchange_rate: "", items: [], Payment: nil, Delivery: nil, Steps: nil)
     }
     
     private var lastOrderBinding: Binding<OrderData> {
@@ -279,10 +281,12 @@ struct MainView: View {
         )
     }
     
-    private var currentStep: Int {
-        guard !orders.isEmpty, let orderSteps = orders[0].steps else { 
+    private func updateCurrentStep() {
+        print("updateCurrentStep called, orders count: \(orders.count)")
+        guard !orders.isEmpty, let orderSteps: [StepData] = orders.last?.Steps else { 
             print("No steps found")
-            return 0 
+            currentStep = 0
+            return 
         }
         var count = 0
         for step: StepData in orderSteps {
@@ -291,7 +295,10 @@ struct MainView: View {
                 count += 1
             }
         }
-        return count
+    
+        print("Setting currentStep to: \(count)")
+        currentStep = count
+
     }
     
     
@@ -304,7 +311,8 @@ struct MainView: View {
 
 
     var body: some View {
-        ZStack(alignment: .top) {
+        let _ = print("MainView body called, orders count: \(orders.count)")
+        return ZStack(alignment: .top) {
             // ① background layer
             TopSplashBackground()
 
@@ -353,7 +361,7 @@ struct MainView: View {
                         title: "",
                         progress: .init(steps: steps, currentStep: 0),
                         accent: .blue,
-                        order: .constant(OrderData(id: 0, address: "", order_created_at: "", exchange_rate: "", items: [], payment: nil, delivery: nil, steps: nil))
+                        order: .constant(OrderData(id: 0, address: "", order_created_at: "", exchange_rate: "", items: [], Payment: nil, Delivery: nil, Steps: nil))
                     )
                 }
                 
@@ -394,6 +402,13 @@ struct MainView: View {
             
         }
         .ignoresSafeArea()
+        .onAppear {
+            updateCurrentStep()
+        }
+        .onChange(of: orders) {
+            print("orders changed")
+            updateCurrentStep()
+        }
         .fullScreenCover(isPresented: $togglemenu) {
             ProfileMenuView(isPresented: $togglemenu)
         }
@@ -589,7 +604,7 @@ struct CurrentOrderCard: View {
                         ForEach(progress.steps.indices, id: \.self) { index in
                             // dot column
                             StepDot(
-                                isComplete: index <= progress.currentStep,
+                                isComplete: index <= (progress.currentStep-1)/2,
                                 accent: accent
                             )
                             .frame(width: 18, height: 18)
@@ -597,12 +612,28 @@ struct CurrentOrderCard: View {
                             
                             // connector column (skip after last dot)
                             if index < progress.steps.count - 1 {
-                                Rectangle()
-                                    .fill(index < progress.currentStep
-                                          ? accent
-                                          : Color.gray.opacity(0.3))
-                                    .frame(height: 2)
-                                    .frame(maxWidth: .infinity)
+                                ZStack(alignment: .leading) {
+                                    
+                                    Rectangle()
+                                        .fill(Color.gray.opacity(0.3))
+                                        .frame(height: 2)
+                                        .frame(maxWidth: .infinity)
+                                        
+                                    if progress.currentStep == 1 || progress.currentStep == 3 || progress.currentStep == 5 {
+                                    Rectangle()
+                                        .fill(accent)
+                                        .frame(height: 2)
+                                        .frame(maxWidth: .infinity)
+                                        .scaleEffect(x: index < progress.currentStep ? 1 : 0, anchor: .leading)
+                                        .animation(.easeInOut(duration: 0.5), value: progress.currentStep)
+
+                                    }else {
+                                        Rectangle()
+                                        .fill(accent)
+                                        .frame(height: 2)
+                                        .frame(maxWidth: .infinity)                                   
+                                    }
+                                }
                             }
                         }
                     }

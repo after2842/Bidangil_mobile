@@ -25,9 +25,9 @@ struct BidangilApp: App {
             case "main":
                 Group {
                     if let profile = sessionManager.profile {
-                        MainView(currentView: $currentView, nickname: .constant(profile.nickname), orders: .constant(profile.data))
+                        MainView(currentView: $currentView, nickname: $sessionManager.nickname, orders: $sessionManager.orders)
                     } else {
-                        MainView(currentView: $currentView, nickname: .constant(""), orders: .constant([]))
+                        MainView(currentView: $currentView, nickname: $sessionManager.nickname, orders: $sessionManager.orders)
                             .task {
                                 print("Fetching profile data...")
                                 await sessionManager.fetchProfileData()
@@ -43,30 +43,31 @@ struct BidangilApp: App {
         }
     }
 }
-struct ProfileResponse: Codable {
+struct ProfileResponse: Codable, Equatable {
     let msg: String
     let data: [OrderData]
     let nickname: String
 }
 
-struct OrderData: Codable, Identifiable {
+struct OrderData: Codable, Identifiable, Equatable {
     let id: Int
     let address: String
     let order_created_at: String
     let exchange_rate: String
     let items: [OrderItemData]
-    let payment: PaymentData?
-    let delivery: DeliveryData?
-    let steps: [StepData]?
+    let Payment: PaymentData?
+    let Delivery: DeliveryData?
+    let Steps: [StepData]?
+
 }
 
-struct OrderItemData: Codable, Identifiable {
+struct OrderItemData: Codable, Identifiable, Equatable {
     let id: UUID = UUID()
     let url: String
     let description: String
 }
 
-struct PaymentData: Codable {
+struct PaymentData: Codable, Equatable {
     let item_price: Double?
     let delivery_price: Double?
     let total_price: Double?
@@ -76,20 +77,22 @@ struct PaymentData: Codable {
     let stripe_delivery_url: String?
 }
 
-struct DeliveryData: Codable {
+struct DeliveryData: Codable, Equatable {
     let delivery_start_at: String
     let courier: String
     let tracking_number: String
     let delivered_at: String
 }
 
-struct StepData: Codable {
+struct StepData: Codable, Equatable {
     let label: String
     let isDone: Bool
 }
 
 class UserSessionManager: ObservableObject, @unchecked Sendable {
     @Published var profile: ProfileResponse?
+    @Published var orders: [OrderData] = []
+    @Published var nickname: String = ""
     
     func fetchProfileData() async {
         guard let token = KeychainWrapper.standard.string(forKey: "access_token") else { return }
@@ -105,8 +108,11 @@ class UserSessionManager: ObservableObject, @unchecked Sendable {
             print("breakpoint 1")
             DispatchQueue.main.async {
                 self.profile = decoded
+                self.orders = decoded.data
+                self.nickname = decoded.nickname
                 
                 // Print the loaded data
+                print("💕 orders: \(decoded.data)")
                 print("📱 Nickname: \(decoded.nickname)")
                 print("📦 Orders count: \(decoded.data.count)")
                 

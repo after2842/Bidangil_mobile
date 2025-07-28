@@ -47,6 +47,7 @@ struct TopSplashBackground: View {
 struct PastOrder: View {
    
     let title: String
+    @Binding var currentStep: Int
 
     var body: some View {
         ZStack {
@@ -57,7 +58,7 @@ struct PastOrder: View {
             Text(title)
                 .font(.headline)
                 .foregroundColor(.black)
-            CheckoutView()
+            CheckoutView(currentStep: $currentStep)
         }
     }
 }
@@ -260,7 +261,7 @@ struct MainView: View {
     @Binding var currentView: String
     @Binding var nickname: String
     @Binding var orders: [OrderData]
-    private let steps = ["주문접수","물건도착", "배송출발", "배송완료"]
+    private let steps = ["주문접수", "상품 결제", "물건도착", "배송비 결제", "배송출발","배송중", "배송완료"]
     @State private var togglemenu: Bool = false
     @State private var showOrder = false
     @State private var currentStep: Int = 0
@@ -366,8 +367,8 @@ struct MainView: View {
                 }
                 
                 
-                HStack{PastOrder(title: "이전 주문")
-                    PastOrder(title:"결제")}
+                HStack{PastOrder(title: "이전 주문", currentStep: currentStep)
+                    PastOrder(title:"결제", currentStep: currentStep)}
                 Spacer()
                 
 
@@ -435,7 +436,28 @@ struct CurrentOrderCard: View {
     var accent: Color = .blue
     @State private var isExpanded: Bool = false
     @State private var showExpandedContent: Bool = false
+    @State private var animationProgress: CGFloat = 0
+    @State private var animationTimer: Timer?
     @Binding var order: OrderData
+    
+    private func startRepeatingAnimation() {
+        // Cancel existing timer
+        animationTimer?.invalidate()
+        
+        // Reset and start animation
+        animationProgress = 0
+        withAnimation(.linear(duration: 2.0).repeatForever(autoreverses: false)) {
+            animationProgress = 1.0
+        }
+        
+        // Set up timer to restart animation every 2 seconds
+        animationTimer = Timer.scheduledTimer(withTimeInterval: 2.0, repeats: true) { _ in
+            animationProgress = 0
+            withAnimation(.linear(duration: 2.0)) {
+                animationProgress = 1.0
+            }
+        }
+    }
     
     private var formattedDate: String {
         let formatter = DateFormatter()
@@ -602,31 +624,34 @@ struct CurrentOrderCard: View {
                     if !isExpanded {
                     HStack(spacing: 0) {
                         ForEach(progress.steps.indices, id: \.self) { index in
-                          
+                            if index%2 == 0 {
                             StepDot(
-                                isComplete: index <= (progress.currentStep-1)/2,
+                                isComplete: index%2 == 0 && index < progress.currentStep,
                                 accent: accent
                             )
                             .frame(width: 18, height: 18)
                             .frame(maxWidth: .infinity)
-                            
-                            // connector column (skip after last dot)
-                            if index < progress.steps.count - 1 {
+                            }
+                            if index < progress.steps.count - 1 && index%2 == 1 {
                                 ZStack(alignment: .leading){  
                                     Rectangle()
                                         .fill(Color.gray.opacity(0.3))
                                         .frame(height: 2)
                                         .frame(maxWidth: .infinity)
                                         
-                                    if progress.currentStep == 1 || progress.currentStep == 3 || progress.currentStep == 5 {
+                                    if index == progress.currentStep{
                                     Rectangle()
                                         .fill(accent)
                                         .frame(height: 2)
                                         .frame(maxWidth: .infinity)
-                                        .scaleEffect(x: index < progress.currentStep ? 1 : 0, anchor: .leading)
-                                        .animation(.easeInOut(duration: 0.5), value: progress.currentStep)
-
-                                    }else {
+                                        .scaleEffect(x: animationProgress, anchor: .leading)
+                                        .onAppear {
+                                            startRepeatingAnimation()
+                                        }
+                                        .onChange(of: isExpanded) { _ in
+                                            startRepeatingAnimation()
+                                        }
+                                    }else if (index < progress.currentStep) {
                                         Rectangle()
                                         .fill(accent)
                                         .frame(height: 2)
@@ -641,11 +666,12 @@ struct CurrentOrderCard: View {
                     // ─── Row 2: labels + *placeholder* columns ───
                     HStack(spacing: 0) {
                         ForEach(progress.steps.indices, id: \.self) { index in
+                            if index%2 == 0 {
                             Text(progress.steps[index])
                                 .font(.caption)
                                 .foregroundColor(.black)
                                 .frame(maxWidth: .infinity, alignment: .center)
-                            
+                            }                            
                             // placeholder column (same spot as connector above)
                             if index < progress.steps.count - 1 {
                                 Spacer()                      
@@ -742,11 +768,19 @@ struct CheckoutView: View {
     @State private var paymentSheet: PaymentSheet?
     @State private var isLoading = false
     @State private var alert: AlertItem?
-
+    @Binding var currentStep: Int
     var body: some View {
-        Button("Pay $9.99") { loadPaymentSheet() }
+        if currentStep == 2 {
+            Button("$9.99") { loadPaymentSheet() }
             .disabled(isLoading)
             .alert(item: $alert) { $0.alert }
+        }
+        if currentStep == 4 {
+            Button("$7.99") { loadPaymentSheet() }
+            .disabled(isLoading)
+            .alert(item: $alert) { $0.alert }
+        }
+
     }
 
     /// 1️⃣ Talk to Django

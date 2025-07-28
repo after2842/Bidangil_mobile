@@ -48,6 +48,7 @@ struct PastOrder: View {
    
     let title: String
     @Binding var currentStep: Int
+    @Binding var paymentInfo: Int
 
     var body: some View {
         ZStack {
@@ -58,7 +59,7 @@ struct PastOrder: View {
             Text(title)
                 .font(.headline)
                 .foregroundColor(.black)
-            CheckoutView(currentStep: $currentStep)
+            CheckoutView(currentStep: $currentStep, paymentInfo: $paymentInfo)
         }
     }
 }
@@ -261,10 +262,11 @@ struct MainView: View {
     @Binding var currentView: String
     @Binding var nickname: String
     @Binding var orders: [OrderData]
-    private let steps = ["주문접수", "상품 결제", "물건도착", "배송비 결제", "배송출발","배송중", "배송완료"]
+    private let steps = ["주문접수", "상품 결제", "물건도착", "배송비 결제", "배송출발", "배송중", "배송완료"]
     @State private var togglemenu: Bool = false
     @State private var showOrder = false
     @State private var currentStep: Int = 0
+    @State private var paymentInfo: Int = 0
 
     
     private var lastOrder: OrderData {
@@ -296,12 +298,42 @@ struct MainView: View {
                 count += 1
             }
         }
+        if count == 6{
+            count = 7
+            }
     
         print("Setting currentStep to: \(count)")
         currentStep = count
 
     }
-    
+    //0: no item payment required
+    //1: item payment required but not fulfilled
+    //2: item payment fulfilled and delivery payment not required
+    //3: item payment fulfilled and delivery payment required
+    //4: item payment fulfilled and delivery payment fulfilled
+    private func updatePaymentInfo(){
+        guard !orders.isEmpty, let orderPayment: PaymentData = orders.last?.Payment else { 
+            paymentInfo = 0 //no item payment required
+            print("No payment info found")
+            return
+            }
+        if orderPayment.item_price != nil{
+            if orderPayment.delivery_price == nil && !orderPayment.item_is_paid{
+                paymentInfo = 1
+            } 
+            if orderPayment.delivery_price == nil && orderPayment.item_is_paid{
+                paymentInfo = 2
+            } 
+            if orderPayment.delivery_price != nil && !orderPayment.delivery_is_paid{
+                paymentInfo = 3
+            } 
+            if orderPayment.delivery_price != nil && orderPayment.delivery_is_paid{
+                paymentInfo = 4
+            }
+        }else{
+            paymentInfo = 0
+        }
+    }
     
     public init(currentView: Binding<String>, nickname: Binding<String>, orders: Binding<[OrderData]>) {
         self._currentView = currentView
@@ -367,8 +399,8 @@ struct MainView: View {
                 }
                 
                 
-                HStack{PastOrder(title: "이전 주문", currentStep: currentStep)
-                    PastOrder(title:"결제", currentStep: currentStep)}
+                HStack{PastOrder(title: "이전 주문", currentStep: $currentStep, paymentInfo: $paymentInfo)
+                    PastOrder(title:"결제", currentStep: $currentStep, paymentInfo: $paymentInfo)}
                 Spacer()
                 
 
@@ -405,10 +437,12 @@ struct MainView: View {
         .ignoresSafeArea()
         .onAppear {
             updateCurrentStep()
+            updatePaymentInfo()
         }
         .onChange(of: orders) {
             print("orders changed")
             updateCurrentStep()
+            updatePaymentInfo()
         }
         .fullScreenCover(isPresented: $togglemenu) {
             ProfileMenuView(isPresented: $togglemenu)
@@ -769,13 +803,14 @@ struct CheckoutView: View {
     @State private var isLoading = false
     @State private var alert: AlertItem?
     @Binding var currentStep: Int
+    @Binding var paymentInfo: Int
     var body: some View {
-        if currentStep == 2 {
+        if currentStep == 1 && paymentInfo == 1 {
             Button("$9.99") { loadPaymentSheet() }
             .disabled(isLoading)
             .alert(item: $alert) { $0.alert }
         }
-        if currentStep == 4 {
+        if currentStep == 3 && paymentInfo == 3 {
             Button("$7.99") { loadPaymentSheet() }
             .disabled(isLoading)
             .alert(item: $alert) { $0.alert }

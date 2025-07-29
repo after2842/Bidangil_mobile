@@ -43,23 +43,38 @@ struct TopSplashBackground: View {
             .ignoresSafeArea()               
     }
 }
-
-struct PastOrder: View {
+    //0: no item payment required
+    //1: item payment required but not fulfilled
+    //2: item payment fulfilled and delivery payment not required
+    //3: item payment fulfilled and delivery payment required
+    //4: item payment fulfilled and delivery payment fulfilled
+struct PaymentButton: View {
    
     let title: String
     @Binding var currentStep: Int
     @Binding var paymentInfo: Int
-
+    @Binding var showNotification: Bool
+    
     var body: some View {
         ZStack {
             RoundedRectangle(cornerRadius: 12 )
                 .fill(Color(white: 0.95))
                 .frame(width: UIScreen.main.bounds.width*0.41, height: 50)
             
-            Text(title)
-                .font(.headline)
-                .foregroundColor(.black)
+            Button(action: {
+                print("PaymentButton tapped")
+                showNotification = true
+                DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
+                    showNotification = false
+                }
+            }) {
+                Text(title)
+                    .font(.headline)
+                    .foregroundColor(.black)
+            }
+
             CheckoutView(currentStep: $currentStep, paymentInfo: $paymentInfo)
+
         }
     }
 }
@@ -267,6 +282,7 @@ struct MainView: View {
     @State private var showOrder = false
     @State private var currentStep: Int = 0
     @State private var paymentInfo: Int = 0
+    @State private var showNotification: Bool = false
 
     
     private var lastOrder: OrderData {
@@ -399,8 +415,8 @@ struct MainView: View {
                 }
                 
                 
-                HStack{PastOrder(title: "이전 주문", currentStep: $currentStep, paymentInfo: $paymentInfo)
-                    PastOrder(title:"결제", currentStep: $currentStep, paymentInfo: $paymentInfo)}
+                HStack{PaymentButton(title: "이전 주문", currentStep: $currentStep, paymentInfo: $paymentInfo, showNotification: $showNotification)
+                    PaymentButton(title:"결제", currentStep: $currentStep, paymentInfo: $paymentInfo, showNotification: $showNotification)}
                 Spacer()
                 
 
@@ -435,6 +451,52 @@ struct MainView: View {
             
         }
         .ignoresSafeArea()
+        .overlay(
+            VStack {
+                if showNotification {
+                    VStack(spacing: 8) {
+                        HStack {
+                            Image(systemName: "info.circle.fill")
+                                .foregroundColor(.white)
+                            Text("결제 정보 확인")
+                                .font(.headline)
+                                .foregroundColor(.white)
+                            Spacer()
+                            Button(action: { showNotification = false }) {
+                                Image(systemName: "xmark.circle.fill")
+                                    .foregroundColor(.white)
+                            }
+                        }
+                        if paymentInfo == 0 {
+                        Text("비단길에서 통관 정보를 확인 후 결제를 진행하실 수 있습니다.")
+                            .font(.caption)
+                            .foregroundColor(.white.opacity(0.9))
+                            .multilineTextAlignment(.leading)
+                        }
+                        if paymentInfo == 2 {
+                        Text("상품 결제가 완료되었습니다. 상품이 도착할 때까지 기다려주세요.")
+                            .font(.caption)
+                            .foregroundColor(.white.opacity(0.9))
+                            .multilineTextAlignment(.leading)
+                        }
+                        if paymentInfo == 4 {
+                        Text("상품과 배송비 결제가 모두 완료되었습니다.")
+                            .font(.caption)
+                            .foregroundColor(.white.opacity(0.9))
+                            .multilineTextAlignment(.leading)
+                        }
+                    }
+                    .padding()
+                    .background(Color.blue)
+                    .cornerRadius(12)
+                    .padding(.horizontal)
+                    .padding(.top, 50) // Add top padding for status bar
+                    .transition(.move(edge: .top).combined(with: .opacity))
+                }
+            }
+            .animation(.easeInOut(duration: 0.5), value: showNotification)
+            , alignment: .top
+        )
         .onAppear {
             updateCurrentStep()
             updatePaymentInfo()
@@ -718,7 +780,7 @@ struct CurrentOrderCard: View {
                     
                    
                 }
-Spacer()
+            Spacer()
             }
         }
         .frame(width: UIScreen.main.bounds.width*0.85, height: isExpanded ? UIScreen.main.bounds.height*0.5 : UIScreen.main.bounds.height*0.2)
@@ -806,16 +868,23 @@ struct CheckoutView: View {
     @Binding var paymentInfo: Int
     var body: some View {
         if currentStep == 1 && paymentInfo == 1 {
-            Button("$9.99") { loadPaymentSheet() }
+            Button(action: { loadPaymentSheet() }) {
+                RoundedRectangle(cornerRadius: 8)
+                    .fill(Color.blue)
+                    .frame(width: UIScreen.main.bounds.width*0.41, height: 50)
+            }
             .disabled(isLoading)
             .alert(item: $alert) { $0.alert }
         }
         if currentStep == 3 && paymentInfo == 3 {
-            Button("$7.99") { loadPaymentSheet() }
+            Button(action: { loadPaymentSheet() }) {
+                RoundedRectangle(cornerRadius: 8)
+                    .fill(Color.blue)
+                    .frame(width: UIScreen.main.bounds.width*0.41, height: 50)
+            }
             .disabled(isLoading)
             .alert(item: $alert) { $0.alert }
         }
-
     }
 
     /// 1️⃣ Talk to Django
@@ -835,6 +904,8 @@ struct CheckoutView: View {
                 var config = PaymentSheet.Configuration()
                 config.merchantDisplayName = "Bidangil"
                 config.applePay = .init(merchantId: "merchant.co.bidangil", merchantCountryCode: "US")   // optional
+                config.defaultBillingDetails = .init()
+                config.allowsDelayedPaymentMethods = true
                 paymentSheet = PaymentSheet(paymentIntentClientSecret: secret,
                                             configuration: config)
                 isLoading = false
@@ -842,6 +913,7 @@ struct CheckoutView: View {
                 /// 3️⃣ Present
                 if let sheet = paymentSheet,
                    let root = UIApplication.shared.firstKeyWindow?.rootViewController {
+                    root.modalPresentationStyle = .fullScreen
                     sheet.present(from: root) { result in
                         switch result {
                         case .completed:

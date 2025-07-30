@@ -77,15 +77,12 @@ struct CustomFormView: View {
     @State var city: String = ""
     @State var state: String = ""
     @State var zipcode: String = ""
-    
     @State private var step: Int = 1
-
     @State var text: String = ""
     @State private var items: [OrderItem] = [OrderItem()]
-    
     @State private var errorMessage: String?
-    
     @State private var errmessage: String = "한개 이상의 주문이 필요합니다."
+    
     private var completedItems: [OrderItem] {
         items.filter {
             !$0.urlText.isEmpty && !$0.optionText.isEmpty

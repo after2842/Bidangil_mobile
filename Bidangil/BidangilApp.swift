@@ -22,6 +22,7 @@ struct BidangilApp: App {
             switch currentView {
             case "login":
                 LoginLandingView(currentView: $currentView)
+                //SlideABTest()
             case "main":
                 Group {
                     if let profile = sessionManager.profile {
@@ -41,6 +42,79 @@ struct BidangilApp: App {
                 MainView(currentView: $currentView, nickname: .constant(""), orders: .constant([]))
             }
         }
+    }
+}
+    
+
+struct SlideABTest: View {
+    @State private var step:Int = 1   
+
+    private func adjustOffset(in geo: GeometryProxy, eachStep: Int) -> CGFloat {
+        if eachStep > step {
+            return geo.size.width
+        }
+        if eachStep < step {
+            return -geo.size.width
+        }
+        return 0
+
+
+
+    }
+
+
+    var body: some View {
+        GeometryReader { geo in              // gives us screen width
+            ZStack {
+                // ── Screen A ──
+  
+                Text("a")
+                    .font(.system(size: 80, weight: .bold))
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .background(.yellow.opacity(0.2))
+                    .offset(x: step == 1 ? 0 : -geo.size.width)
+                    .disabled(step != 1)
+
+                // ── Screen B ──
+                Text("b")
+                    .font(.system(size: 80, weight: .bold))
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .background(.green.opacity(0.2))
+                    .offset(x: step == 2 ? 0 : adjustOffset(in: geo, eachStep: 2))
+                    .disabled(step != 2)
+                // ── Screen C ──
+                Text("C")
+                    .font(.system(size: 80, weight: .bold))
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .background(.red.opacity(0.2))
+                    .offset(x: step == 3 ? 0 : adjustOffset(in: geo, eachStep: 3))
+                    .disabled(step != 3)
+                Text("D")
+                    .font(.system(size: 80, weight: .bold))
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .background(.blue.opacity(0.2))
+                    .offset(x: step == 4 ? 0 : adjustOffset(in: geo, eachStep: 4))
+                    .disabled(step != 4)
+            }.animation(.easeInOut(duration: 0.35), value: step)
+            Spacer()
+            HStack{
+            Button(action: {
+       
+                step -= 1
+            }) {
+                Text("Prev")
+            }
+            Button(action: {
+            
+                step += 1
+            }) {
+                Text("Next")
+            }
+            
+            }
+
+        }
+
     }
 }
 struct ProfileResponse: Codable, Equatable {

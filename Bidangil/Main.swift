@@ -432,7 +432,9 @@ struct MainView: View {
             .frame(maxWidth: .infinity, maxHeight: .infinity,
                    alignment: .bottom)
             Button {
-                    currentView = "order"
+                    withAnimation(.easeInOut(duration: 0.3)) {
+                        currentView = "order"
+                    }
                 } label: {
                     Text("주문하기")
                         .font(.system(size: 17, weight: .medium))

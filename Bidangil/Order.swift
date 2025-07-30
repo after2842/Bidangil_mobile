@@ -9,6 +9,22 @@ import SwiftUI
 import MapKit
 import CoreLocation
 
+// Custom transition for right-to-left slide
+extension AnyTransition {
+    static var slideFromRight: AnyTransition {
+        .asymmetric(
+            insertion: .move(edge: .trailing).combined(with: .opacity),
+            removal: .move(edge: .leading).combined(with: .opacity)
+        )
+    }
+    static var slideFromLeft: AnyTransition {
+        .asymmetric(
+            insertion: .move(edge: .leading).combined(with: .opacity),
+            removal: .move(edge: .trailing).combined(with: .opacity)
+        )
+    }
+}
+
 public struct Order: View {
     @Binding var currentView: String
     
@@ -78,7 +94,7 @@ struct CustomFormView: View {
     @State var zipcode: String = ""
     
     @State private var step: Int = 1
-    
+
     @State var text: String = ""
     @State private var items: [OrderItem] = [OrderItem()]
     
@@ -90,6 +106,19 @@ struct CustomFormView: View {
             !$0.urlText.isEmpty && !$0.optionText.isEmpty
         }
     }
+    private func adjustOffset(in geo: GeometryProxy, eachStep: Int) -> CGFloat {
+        if eachStep > step {
+            return geo.size.width+geo.size.width*0.1
+        }
+        if eachStep < step {
+            return -geo.size.width-geo.size.width*0.1
+        }
+        return 0
+
+
+
+    }
+
 
     
     
@@ -114,10 +143,9 @@ struct CustomFormView: View {
                 if step > 1 {
                     HStack{
                         Button(action: {
-                            self.step -= 1
+                            step -= 1
                         }) {
-                            
-                                Image(systemName: "arrow.backward").foregroundColor(.black)
+                            Image(systemName: "arrow.backward").foregroundColor(.black)
                         }
                         Spacer()
                     }.padding(.horizontal)
@@ -125,22 +153,44 @@ struct CustomFormView: View {
 
                 }
                 Spacer()
-                ZStack{
-                    if step==1{
-                        NameandEmail(name: $name, phone: $phone).transition(.opacity)
-                    }else if step==2{
-                        Address(address_1: $address_1, address_2: $address_2, city:$city, state: $state, zipcode: $zipcode).transition(.opacity)
-                    }else if step == 3{
-                        OrderPage(items: $items).transition(.opacity)
-                    }else if step == 4{
-                        ScrollView{
-                            FinalReviewView(items: $items, name: $name, phone: $phone, address_1: $address_1, address_2: $address_2, city: $city, state: $state, zipcode: $zipcode).transition(.opacity)
-                        }.scrollIndicators(.hidden).padding(.top,30)
+                ZStack(){
+               GeometryReader{ geo in
+                ZStack(){
+                    NameandEmail(name: $name, phone: $phone)
+                        .frame(width: .infinity)
+                        .offset(x: step == 1 ? 0 : -geo.size.width-geo.size.width*0.1)
+                        .disabled(step != 1)
+             
+          
+                    Address(address_1: $address_1, address_2: $address_2, city:$city, state: $state, zipcode: $zipcode)
+                        .frame(width: .infinity)
+                        .offset(x: step == 2 ? 0 : adjustOffset(in: geo, eachStep: 2))
+                        .disabled(step != 2)
+                 
+                  
+                    OrderPage(items: $items)
+                        .offset(x: step == 3 ? 0 : adjustOffset(in: geo, eachStep: 3))
+                        .disabled(step != 3)
+           
+                    
+                    ScrollView{
+                        FinalReviewView(items: $items, name: $name, phone: $phone, address_1: $address_1, address_2: $address_2, city: $city, state: $state, zipcode: $zipcode)
+                    }.scrollIndicators(.hidden).padding(.top,30)
+                    .offset(x: step == 4 ? 0 : adjustOffset(in: geo, eachStep: 4))
+                    .disabled(step != 4)
+               }
+               .animation(.easeInOut(duration: 0.35), value: step)
+              
 
 
-                    }
-                }.animation(.easeInOut, value: step)
+                    }               
+                }
+                .frame(width: .infinity)
+                .padding()
+                
+
                 Spacer()
+                VStack(){
                 Text(errorMessage ?? "" ).foregroundColor(.red)
                 Button(action: {
                     print("next clicked")
@@ -148,30 +198,35 @@ struct CustomFormView: View {
                         if name.isEmpty || phone.isEmpty{
                             errorMessage = "이름과 전화번호를 입력해주세요."
                         }else{
-                            errorMessage = nil
                             step += 1
+                            errorMessage = nil
+                            
                         }
                     }else if step == 2{
                         if address_1.isEmpty || state.isEmpty || zipcode.isEmpty || city.isEmpty{
                             errorMessage = "주소 정보를 확인해주세요."
                         }
                         else{
-                            errorMessage=nil
                             step += 1
+                            errorMessage=nil
+                         
                         }
                     }else if step == 3{
                         if completedItems.isEmpty {
                             errorMessage = "한개 이상의 상품을 주문해주세요."
                         }else{
-                            errorMessage=nil
                             step += 1
+                            errorMessage=nil
+                         
                         }
                         
                     }else{
-                        submitForm()
+                        print("submitForm")
+                        //submitForm()
                     }
                 }) {
                     if step < 4{
+
                         Text("다음")
                             .frame(maxWidth: .infinity)
                             .padding()
@@ -198,8 +253,10 @@ struct CustomFormView: View {
                     }
 
                 }
+                }
                 .padding(.horizontal)
                 .padding(.bottom, 30)
+            }
             }
         }
 
@@ -207,20 +264,22 @@ struct CustomFormView: View {
         
         
         
-    }
-    func submitForm() {
-        print("✅ Name: \(name)")
-        print("✅ Email: \(phone)")
-        print("✅ Address: \(address_1)")
-        print("✅ Age: \(state)")
+        }
         
-    }
-    
-}
+        // func submitForm() {
+        //     print("✅ Name: \(name)")
+        //     print("✅ Email: \(phone)")
+        //     print("✅ Address: \(address_1)")
+        //     print("✅ Age: \(state)")
+            
+        // }
+
 struct NameandEmail: View {
     @Binding var name: String
     @Binding var phone: String
+
     var body: some View {
+        
         VStack(spacing: 20){
             VStack(alignment:.leading) {
                 HStack {
@@ -229,11 +288,15 @@ struct NameandEmail: View {
                          .font(.headline)
                  }
                      
-                         TextField("고길동", text: $name)
-                             .padding()
-                             .background(Color(.systemGray6))
-                             .cornerRadius(8)
-                             .frame(width: UIScreen.main.bounds.width * 0.9)
+                         HStack {
+                            
+                             TextField("고길동", text: $name)
+                                 .padding()
+                                 .background(Color(.systemGray6))
+                                 .cornerRadius(8)
+                                 .frame(width: UIScreen.main.bounds.width * 0.9)
+                             Spacer()
+                         }
             }
 
                 
@@ -243,20 +306,22 @@ struct NameandEmail: View {
                 Text("전화번호")
                     .font(.headline)
             }
-
+        HStack{
                  TextField("000-000-0000", text: $phone)
                      .keyboardType(.phonePad)
                      .padding()
                      .background(Color(.systemGray6))
                      .cornerRadius(8)
                      .frame(width: UIScreen.main.bounds.width * 0.9)
-                        
+                Spacer()        
                     }
+                    
+            }
 
                      
                      
                      
-        }
+        }.frame(width: .infinity)
 
     }
 }
@@ -276,11 +341,14 @@ struct Address:View{
                          .font(.headline)
                  }
                 VStack(spacing: 10){
+                    HStack{
                     TextField("주소1", text: $address_1)
                         .padding()
                         .background(Color(.systemGray6))
                         .cornerRadius(8)
                         .frame(width: UIScreen.main.bounds.width * 0.9)
+                        Spacer()
+                    }
                     HStack{
                         TextField("주소2", text: $address_2)
                             .padding()
@@ -292,6 +360,7 @@ struct Address:View{
                             .background(Color(.systemGray6))
                             .cornerRadius(8)
                             .frame(width: UIScreen.main.bounds.width * 0.44)
+                        Spacer()
 
                     }
                     HStack{
@@ -302,7 +371,8 @@ struct Address:View{
                             .background(Color(.systemGray6))
                             .cornerRadius(8)
                             .frame(width: UIScreen.main.bounds.width * 0.44)
-                    }.padding(.horizontal, 10)
+                        Spacer()
+                    }
 
 
                 }
@@ -357,7 +427,10 @@ struct OrderPage: View {
 
             VStack(spacing: 20) {
                 ForEach($items) { $item in
+                HStack{
                     OrderCardView(item: $item)
+                    Spacer()
+                }
                 }
             }
             .padding(.vertical)
@@ -373,9 +446,9 @@ struct OrderPage: View {
                 withAnimation { items.append(OrderItem()) }
             } label: {
                 Image(systemName: "plus")
-                    .font(.system(size: 22, weight: .bold))
+                    .font(.system(size: 20, weight: .bold))
                     .foregroundColor(.white)
-                    .padding(20)
+                    .padding(17)
                     .background(.blue)
                     .clipShape(Circle())
                

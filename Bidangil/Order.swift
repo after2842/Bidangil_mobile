@@ -9,21 +9,6 @@ import SwiftUI
 import MapKit
 import CoreLocation
 
-// Custom transition for right-to-left slide
-extension AnyTransition {
-    static var slideFromRight: AnyTransition {
-        .asymmetric(
-            insertion: .move(edge: .trailing).combined(with: .opacity),
-            removal: .move(edge: .leading).combined(with: .opacity)
-        )
-    }
-    static var slideFromLeft: AnyTransition {
-        .asymmetric(
-            insertion: .move(edge: .leading).combined(with: .opacity),
-            removal: .move(edge: .trailing).combined(with: .opacity)
-        )
-    }
-}
 
 public struct Order: View {
     @Binding var currentView: String

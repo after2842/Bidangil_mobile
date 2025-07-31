@@ -82,7 +82,7 @@ struct CustomFormView: View {
     @State private var items: [OrderItem] = [OrderItem()]
     @State private var errorMessage: String?
     @State private var errmessage: String = "한개 이상의 주문이 필요합니다."
-    
+
     private var completedItems: [OrderItem] {
         items.filter {
             !$0.urlText.isEmpty && !$0.optionText.isEmpty
@@ -151,6 +151,7 @@ struct CustomFormView: View {
                  
                   
                     OrderPage(items: $items)
+                        .frame(width: .infinity)
                         .offset(x: step == 3 ? 0 : adjustOffset(in: geo, eachStep: 3))
                         .disabled(step != 3)
            
@@ -160,6 +161,9 @@ struct CustomFormView: View {
                     }.scrollIndicators(.hidden).padding(.top,30)
                     .offset(x: step == 4 ? 0 : adjustOffset(in: geo, eachStep: 4))
                     .disabled(step != 4)
+
+
+
                }
                .animation(.easeInOut(duration: 0.35), value: step)
               
@@ -404,14 +408,14 @@ struct OrderPage: View {
 
     var body: some View {
      
-
+GeometryReader{ geo in
         ScrollView {
 
             VStack(spacing: 20) {
                 ForEach($items) { $item in
                 HStack{
                     OrderCardView(item: $item)
-                    Spacer()
+                   
                 }
                 }
             }
@@ -422,6 +426,8 @@ struct OrderPage: View {
          
         }
         .scrollIndicators(.hidden)
+        .offset(x: 0 )
+
         
         .overlay(
             Button {
@@ -438,6 +444,7 @@ struct OrderPage: View {
             .padding(),
             alignment: .bottomTrailing
         )
+}
 
     }
 }
@@ -481,6 +488,7 @@ struct FinalReviewView: View {
     @Binding var city: String
     @Binding var state: String
     @Binding var zipcode: String
+    @State private var expand: [Bool] = Array(repeating: false, count: 20)
     
     var fullAddress: String {
         let line1 = [address_1, address_2]
@@ -504,27 +512,44 @@ struct FinalReviewView: View {
                 EmptyView()
             }else{
                 Text("신청 내역").font(.title).fontWeight(.heavy).foregroundColor(.black).padding(.bottom,10).padding(.horizontal).font(.title)
-                ForEach(items.filter {
+                ForEach(Array(items.filter {
                     !$0.urlText.isEmpty
                  &&
                     !$0.optionText.isEmpty
-                }, id: \.id){ item in
+                }.enumerated()), id: \.element.id){ index, item in
                     VStack(alignment:.leading){
-                        HStack{
-                            Image(systemName: "globe").foregroundColor(.blue)
-                            Text(item.urlText)
-                        }
-                        HStack{
-                            Image(systemName: "shippingbox.fill").foregroundColor(.blue)
-                            Text(item.optionText).foregroundColor(.blue).opacity(0.5)
+                        ZStack(alignment: .leading){
+                             RoundedRectangle(cornerRadius: 10)
+                             .fill(Color(.systemGray6))
+                            .frame(width: UIScreen.main.bounds.width * 0.92, height: expand[index] ? UIScreen.main.bounds.height * 0.16 : UIScreen.main.bounds.height * 0.08)
+                             .onTapGesture {
+                                expand[index].toggle()
+                             }.animation(.easeInOut(duration: 0.3), value: expand)
+                   
+
+                         VStack(alignment: .leading){
+                         HStack(){
+                              Image(systemName: "globe").foregroundColor(.blue).animation(.easeInOut(duration: 0.3), value: expand)
+                              Link(item.urlText.count > 32 ? String(item.urlText.prefix(30)) + "..." : item.urlText, destination: URL(string: item.urlText) ?? URL(string: "https://bidangil.co")!).animation(.easeInOut(duration: 0.3), value: expand)
+                          }.padding(.vertical,2)
+                        HStack(alignment: .top){
+                            Image(systemName: "shippingbox.fill").foregroundColor(.blue).animation(.easeInOut(duration: 0.3), value: expand)
+                        if !expand[index]{
+                            Text(item.optionText.count > 32 ? String(item.optionText.prefix(30)) + "..." : item.optionText).foregroundColor(.black).opacity(0.8).animation(.easeInOut(duration: 0.3), value: expand)
                             
+                        }else{
+                            Text(item.optionText).foregroundColor(.black).opacity(0.8).animation(.easeInOut(duration: 0.3), value: expand)
                         }
+                        
+                    }.padding(.horizontal)
+                    }
             
 
-                    }.padding()
-                    .background(RoundedRectangle(cornerRadius: 10).fill(Color(.systemGray6)).padding(.vertical,6))
+                    }.frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)                                  
 
-                }.padding(.horizontal,20)
+                    
+
+                }
                 
                 Text("배송 정보").font(.title).fontWeight(.heavy).foregroundColor(.black).padding(.bottom,10).padding(.horizontal).font(.title).padding(.top ,20)
                 
@@ -533,34 +558,43 @@ struct FinalReviewView: View {
                 VStack(alignment: .leading){
                     HStack(){
                         Text("이름").frame(width: labelWidth, alignment: .leading) .fontWeight(.bold)
+              
                         Text(name)
                     }.padding(.vertical,4)
+                   
                     HStack(){
                         Text("전화번호").frame(width: labelWidth, alignment: .leading)
                             .fontWeight(.bold)
+        
                         Text(phone)
                         
                     }.padding(.vertical,4)
+                 
                     HStack(alignment:.top){
                         Text("배송주소").fontWeight(.bold).frame(width: labelWidth, alignment: .leading).fontWeight(.bold)
+          
                         Text(fullAddress)
                     }.padding(.vertical,4)
+       
                     
                     
                     
 
-                }.padding(.vertical,12).frame(maxWidth: .infinity, alignment: .center)                                      .background(RoundedRectangle(cornerRadius: 10).fill(Color(.systemGray6))).padding(.horizontal,20)
+                }.padding(.vertical,12).frame(width: UIScreen.main.bounds.width*0.92, alignment: .center)                                      
+                .background(RoundedRectangle(cornerRadius: 10).fill(Color(.systemGray6)))
 
             }
             DropDownDemo()
+        }
+    }
+}
             
 
 
         }
         
      
-    }
-}
+
 /// Builds a snapshot image with a pin at the given address.
 final class MapSnapshotter {
     

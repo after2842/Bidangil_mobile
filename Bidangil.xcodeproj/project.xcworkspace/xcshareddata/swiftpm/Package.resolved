@@ -1,6 +1,15 @@
 {
-  "originHash" : "d706850027ac357e5dbf586f5331b3fb305d0ac7ddae6225da1e6b5d8e5ae360",
+  "originHash" : "404f9724a6a47d88b29808119654a33bd4a200dd8a2a701aa9f786d38263c2ee",
   "pins" : [
+    {
+      "identity" : "stripe-ios-spm",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/stripe/stripe-ios-spm",
+      "state" : {
+        "revision" : "6dbaa65cfc9d3f7dafe698ca95d0c982685287c4",
+        "version" : "24.17.0"
+      }
+    },
     {
       "identity" : "swiftkeychainwrapper",
       "kind" : "remoteSourceControl",

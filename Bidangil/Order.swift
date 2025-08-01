@@ -8,6 +8,7 @@
 import SwiftUI
 import MapKit
 import CoreLocation
+import SwiftKeychainWrapper
 
 
 public struct Order: View {
@@ -100,10 +101,72 @@ struct CustomFormView: View {
 
 
     }
+    private func submitForm(){
+        var address: [String: String] = [
+            "addressLine1": address_1,
+            "addressLine2": address_2,
+            "city": city,
+            "state": state,
+            "zip": zipcode,
+            "country": "United States",
+            "phone": phone,
+            "name": name
+        ]
+        var orders: [[String: String]] = []
+        for item in items {
+            orders.append([
+                "url": item.urlText,
+                "desc": item.optionText
+            ])
+        }
+        print("Address: \(address)")
+        print("items:\(orders)")
 
+        var payload: [String: Any] = [
+            "orders": orders,
+            "address": address
+        ]
+        
+        // Send POST request
+        Task {
+            await submitOrder(payload: payload)
+        }
+    }
+    
+    //POST request with payload + JWT
+    private func submitOrder(payload: [String: Any]) async {
+        guard let token = KeychainWrapper.standard.string(forKey: "access_token") else {
+            print("❌ No access token found")
+            return
+        }
+        
+        guard let url = URL(string: "http://127.0.0.1:8000/api/submit_order/") else {
+            print("❌ Invalid URL")
+            return
+        }
+        
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        
+        do {
+            let jsonData = try JSONSerialization.data(withJSONObject: payload)
+            request.httpBody = jsonData
+            
+            let (data, response) = try await URLSession.shared.data(for: request)
+            
+            if let httpResponse = response as? HTTPURLResponse {
+                print("✅ Response status: \(httpResponse.statusCode)")
+                if let responseString = String(data: data, encoding: .utf8) {
+                    print("✅ Response: \(responseString)")
+                }
+            }
+        } catch {
+            print("❌ Error submitting order: \(error)")
+        }
+    }
 
-    
-    
     var body: some View {
         ZStack(alignment: .topLeading){
 
@@ -208,7 +271,7 @@ struct CustomFormView: View {
                         
                     }else{
                         print("submitForm")
-                        //submitForm()
+                        submitForm()
                     }
                 }) {
                     if step < 4{
@@ -530,16 +593,16 @@ struct FinalReviewView: View {
                          VStack(alignment: .leading){
                          HStack(){
                               Image(systemName: "globe").foregroundColor(.blue).animation(.easeInOut(duration: 0.3), value: expand)
-                              Link(item.urlText.count > 32 ? String(item.urlText.prefix(30)) + "..." : item.urlText, destination: URL(string: item.urlText) ?? URL(string: "https://bidangil.co")!).animation(.easeInOut(duration: 0.3), value: expand)
+                              Link(item.urlText.count > 32 ? String(item.urlText.prefix(30)) + "..." : item.urlText, destination: URL(string: item.urlText) ?? URL(string: "https://bidangil.co")!)
+                              .animation(.easeInOut(duration: 0.3), value: expand)
                           }.padding(.vertical,2)
+                          .padding(.horizontal)
                         HStack(alignment: .top){
                             Image(systemName: "shippingbox.fill").foregroundColor(.blue).animation(.easeInOut(duration: 0.3), value: expand)
-                        if !expand[index]{
-                            Text(item.optionText.count > 32 ? String(item.optionText.prefix(30)) + "..." : item.optionText).foregroundColor(.black).opacity(0.8).animation(.easeInOut(duration: 0.3), value: expand)
+                            Text(item.optionText.count > 32 && !expand[index] ? String(item.optionText.prefix(30)) + "..." : item.optionText).foregroundColor(.black).opacity(0.8)
+                            .animation(.easeInOut(duration: 0.3), value: expand)
                             
-                        }else{
-                            Text(item.optionText).foregroundColor(.black).opacity(0.8).animation(.easeInOut(duration: 0.3), value: expand)
-                        }
+
                         
                     }.padding(.horizontal)
                     }
@@ -550,8 +613,8 @@ struct FinalReviewView: View {
                     
 
                 }
-                
-                Text("배송 정보").font(.title).fontWeight(.heavy).foregroundColor(.black).padding(.bottom,10).padding(.horizontal).font(.title).padding(.top ,20)
+                }
+                Text("배송 정보").font(.title).fontWeight(.heavy).foregroundColor(.black).padding(.bottom,10).padding(.horizontal).font(.title).padding(.top ,30)
                 
                 
                 
@@ -591,7 +654,7 @@ struct FinalReviewView: View {
             
 
 
-        }
+
         
      
 
@@ -664,9 +727,12 @@ struct DropDownDemo: View {
             isExpanded: $isOpen              // toggle when tapped
         ) {
             VStack(alignment: .leading, spacing: 8) {
-                MapPhotoView()
-                Text("신청 시점의 환율이 적용됩니다.").fontWeight(.light)
-                Text("신청 후 요청하신 상품의 가격과 통관 정보를 종합하여 결제합니다.").fontWeight(.light)
+                //MapPhotoView()
+                Text("신청하기 버튼을 누른 시점의 환율이 적용됩니다.").fontWeight(.light)
+                Text("신청 후 비단길에서 물품의 가격과 통관유무를 확인합니다.").fontWeight(.light)
+                Text("비단길 앱, 홈페이지, 이메일 링크를 통하여 배송비와 물건을 결제하실 수 있습니다.")
+               
+                
             }
             .padding(.top, 4)
         }
@@ -676,7 +742,7 @@ struct DropDownDemo: View {
                 .fill(Color(.systemGray6))
         )
         .animation(.easeInOut, value: isOpen) // smooth open/close
-        .padding(.horizontal,20)
+        .padding(.horizontal)
     }
 }
 

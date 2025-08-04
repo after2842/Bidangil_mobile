@@ -158,12 +158,68 @@ struct CustomFormView: View {
             
             if let httpResponse = response as? HTTPURLResponse {
                 print("✅ Response status: \(httpResponse.statusCode)")
+                
+                // Handle token expiration (401 Unauthorized)
+                if httpResponse.statusCode == 401 {
+                    print("🔄 Token expired, attempting refresh...")
+                    if await refreshToken() {
+                        // Retry the request with new token
+                        return await submitOrder(payload: payload)
+                    } else {
+                        print("❌ Failed to refresh token, redirecting to login")
+                        DispatchQueue.main.async {
+                            self.currentView = "login"
+                        }
+                        return
+                    }
+                }
+                
                 if let responseString = String(data: data, encoding: .utf8) {
                     print("✅ Response: \(responseString)")
                 }
             }
         } catch {
             print("❌ Error submitting order: \(error)")
+        }
+    }
+    
+    private func refreshToken() async -> Bool {
+        guard let refreshToken = KeychainWrapper.standard.string(forKey: "refresh_token") else {
+            print("❌ No refresh token found")
+            return false
+        }
+        
+        guard let url = URL(string: "http://127.0.0.1:8000/api/token/refresh/") else {
+            print("❌ Invalid refresh URL")
+            return false
+        }
+        
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        
+        let refreshPayload = ["refresh": refreshToken]
+        
+        do {
+            let jsonData = try JSONSerialization.data(withJSONObject: refreshPayload)
+            request.httpBody = jsonData
+            
+            let (data, response) = try await URLSession.shared.data(for: request)
+            
+            if let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 {
+                if let tokenResponse = try? JSONSerialization.jsonObject(with: data) as? [String: String],
+                   let newAccessToken = tokenResponse["access"] {
+                    KeychainWrapper.standard.set(newAccessToken, forKey: "access_token")
+                    print("✅ Token refreshed successfully")
+                    return true
+                }
+            }
+            
+            print("❌ Failed to refresh token")
+            return false
+        } catch {
+            print("❌ Error refreshing token: \(error)")
+            return false
         }
     }
 

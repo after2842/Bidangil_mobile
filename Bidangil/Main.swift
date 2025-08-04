@@ -277,12 +277,14 @@ struct MainView: View {
     @Binding var currentView: String
     @Binding var nickname: String
     @Binding var orders: [OrderData]
+    @ObservedObject var sessionManager: UserSessionManager
     private let steps = ["주문접수", "상품 결제", "물건도착", "배송비 결제", "배송출발", "배송중", "배송완료"]
     @State private var togglemenu: Bool = false
     @State private var showOrder = false
     @State private var currentStep: Int = 0
     @State private var paymentInfo: Int = 0
     @State private var showNotification: Bool = false
+    @State private var expandCard: Bool = false
 
     
     private var lastOrder: OrderData {
@@ -334,41 +336,50 @@ struct MainView: View {
             return
             }
         if orderPayment.item_price != nil{
-            if orderPayment.delivery_price == nil && !orderPayment.item_is_paid{
+            if orderPayment.delivery_price == nil && !orderPayment.item_is_paid{ //item payment required 
                 paymentInfo = 1
             } 
-            if orderPayment.delivery_price == nil && orderPayment.item_is_paid{
+            if orderPayment.delivery_price == nil && orderPayment.item_is_paid{ //item payment fulfilled but delivery payment not required
                 paymentInfo = 2
             } 
-            if orderPayment.delivery_price != nil && !orderPayment.delivery_is_paid{
+            if orderPayment.delivery_price != nil && !orderPayment.delivery_is_paid{ //delivery payment required
                 paymentInfo = 3
             } 
-            if orderPayment.delivery_price != nil && orderPayment.delivery_is_paid{
+            if orderPayment.delivery_price != nil && orderPayment.delivery_is_paid{ //delivery payment fulfilled
                 paymentInfo = 4
             }
         }else{
             paymentInfo = 0
         }
+        print("paymentInfo: \(paymentInfo)")
     }
     
-    public init(currentView: Binding<String>, nickname: Binding<String>, orders: Binding<[OrderData]>) {
+    private func refreshData() async {
+        print("🔄 Refreshing data...")
+        // Re-fetch profile data from the server
+        await sessionManager.fetchProfileData()
+        updateCurrentStep()
+        updatePaymentInfo()
+        print("✅ Data refreshed")
+    }
+    
+    public init(currentView: Binding<String>, nickname: Binding<String>, orders: Binding<[OrderData]>, sessionManager: UserSessionManager) {
         self._currentView = currentView
         self._nickname = nickname
         self._orders = orders
-        
+        self.sessionManager = sessionManager
     }
 
 
-    var body: some View {
+        var body: some View {
         let _ = print("MainView body called, orders count: \(orders.count)")
         return ZStack(alignment: .top) {
             // ① background layer
             TopSplashBackground()
 
-            // ② foreground UI
-            VStack(alignment: .center, spacing: 24) {
-
-                // profile button aligned to the right
+                        // ② foreground UI
+            VStack() {
+                // Fixed header
                 HStack {
                     Spacer()
                     Button{}label: {
@@ -389,68 +400,79 @@ struct MainView: View {
                 }
                 .padding(.top, 60)
                 .padding(.horizontal)
-             
+                .padding(.bottom, 20)
+                
+                // Scrollable middle section
                 Spacer()
-
-               
-                // Show CurrentOrderCard with a real binding if possible, else use a constant
-                if let lastIndex = orders.indices.last {
-         
-                    CurrentOrderCard(
-                        title: String(orders[lastIndex].id),
-                        progress: .init(steps: steps, currentStep: currentStep),
-                        accent: .blue,
-                        order: $orders[lastIndex],
+                VStack(spacing: expandCard ? UIScreen.main.bounds.height * 0.33 : UIScreen.main.bounds.height*0.05){
+                ScrollView {
+                    VStack(spacing: 24) {
+                
+                        Spacer()
                         
-                    )
-                    
-                } else {
-             
-                    CurrentOrderCard(
-                        title: "",
-                        progress: .init(steps: steps, currentStep: 0),
-                        accent: .blue,
-                        order: .constant(OrderData(id: 0, address: "", order_created_at: "", exchange_rate: "", items: [], Payment: nil, Delivery: nil, Steps: nil))
-                    )
-                }
-                
-                
-                HStack{PaymentButton(title: "이전 주문", currentStep: $currentStep, paymentInfo: $paymentInfo, showNotification: $showNotification)
-                    PaymentButton(title:"결제", currentStep: $currentStep, paymentInfo: $paymentInfo, showNotification: $showNotification)}
-                Spacer()
-                
-
-                
-
-
-
-                // call-to-action button
-
-            }
-            .padding(.horizontal)
-            .padding(.bottom, 55)
-            .frame(maxWidth: .infinity, maxHeight: .infinity,
-                   alignment: .bottom)
-            Button {
-                    withAnimation(.easeInOut(duration: 0.3)) {
-                        currentView = "order"
+                        // Show CurrentOrderCard with a real binding if possible, else use a constant
+                        if let lastIndex = orders.indices.last {
+                 
+                            CurrentOrderCard(
+                                title: String(orders[lastIndex].id),
+                                progress: .init(steps: steps, currentStep: currentStep),
+                                accent: .blue,
+                                order: $orders[lastIndex],
+                                expandCard: $expandCard
+                                
+                            ).onTapGesture {
+                               
+                                expandCard.toggle()
+                            }.animation(.easeInOut(duration: 0.3), value: expandCard)
+                            
+                        } else {
+                     
+                            CurrentOrderCard(
+                                title: "",
+                                progress: .init(steps: steps, currentStep: 0),
+                                accent: .blue,
+                                order: .constant(OrderData(id: 0, address: "", order_created_at: "", exchange_rate: "", items: [], Payment: nil, Delivery: nil, Steps: nil)),
+                                expandCard: $expandCard
+                            ).onTapGesture {
+                        
+                                expandCard.toggle()
+                            }.animation(.easeInOut(duration: 0.3), value: expandCard)
+                        }
+                        
+                        
+                        HStack{PaymentButton(title: "이전 주문", currentStep: $currentStep, paymentInfo: $paymentInfo, showNotification: $showNotification)
+                            PaymentButton(title:"결제", currentStep: $currentStep, paymentInfo: $paymentInfo, showNotification: $showNotification)}.animation(.easeInOut(duration: 0.3), value: expandCard)
+                        
+                        Spacer(minLength: 100)
                     }
-                } label: {
-                    Text("주문하기")
-                        .font(.system(size: 17, weight: .medium))
-                        .foregroundColor(Color.white)
-                        .frame(maxWidth: .infinity)
-                        .padding()
-                        .background(Color(hue: 0.574,
-                                          saturation: 0.871,
-                                          brightness: 0.935,
-                                          opacity: 0.925))
-                        .cornerRadius(100)
+                    .padding(.horizontal)
+                }
+                .refreshable {
+                    await refreshData()
+                }
+                .scrollIndicators(.hidden)
+        }.padding(.top, expandCard ? UIScreen.main.bounds.height * 0.05 : UIScreen.main.bounds.height*0.2)
+        .animation(.easeInOut(duration: 0.3), value: expandCard)
+                
+                // Fixed bottom button
+                Button {
+                        withAnimation(.easeInOut(duration: 0.3)) {
+                            currentView = "order"
+                        }
+                    } label: {
+                        Text("주문하기")
+                            .font(.system(size: 17, weight: .medium))
+                            .foregroundColor(Color.white)
+                            .frame(maxWidth: .infinity)
+                            .padding()
+                            .background(Color(hue: 0.574,
+                                              saturation: 0.871,
+                                              brightness: 0.935,
+                                              opacity: 0.925))
+                            .cornerRadius(100)
                 }.padding(.horizontal)
                 .padding(.bottom, 55)
-                .frame(maxWidth: .infinity, maxHeight: .infinity,
-                       alignment: .bottom)
-            
+            }
         }
         .ignoresSafeArea()
         .overlay(
@@ -532,11 +554,11 @@ struct CurrentOrderCard: View {
     let title: String
     let progress: OrderProgress
     var accent: Color = .blue
-    @State private var isExpanded: Bool = false
     @State private var showExpandedContent: Bool = false
     @State private var animationProgress: CGFloat = 0
     @State private var animationTimer: Timer?
     @Binding var order: OrderData
+    @Binding var expandCard: Bool
     
     private func startRepeatingAnimation() {
         // Cancel existing timer
@@ -602,16 +624,16 @@ struct CurrentOrderCard: View {
             RoundedRectangle(cornerRadius: 12)
                 .fill(LinearGradient(stops: [
                     .init(color: Color.blue, location: 0.00),
-                    .init(color: Color.blue, location: isExpanded ? 1.00 : 0.33),
-                    .init(color: Color(white: 0.95), location: isExpanded ? 1.01 : 0.33),
+                    .init(color: Color.blue, location: expandCard ? 1.00 : 0.33),
+                    .init(color: Color(white: 0.95), location: expandCard ? 1.01 : 0.33),
                     .init(color: Color(white: 0.95), location: 1.00)
                 ], startPoint: .top, endPoint: .bottom))
-                .animation(.easeInOut(duration: 0.3), value: isExpanded)
+                .animation(.easeInOut(duration: 0.3), value: expandCard)
             
             
             
             VStack{
-                if !isExpanded {
+                if !expandCard {
                 VStack{
                     HStack{                                  
                         Image(systemName: "tag.fill")
@@ -719,7 +741,7 @@ struct CurrentOrderCard: View {
                 
                 VStack(spacing: 8) {
                     // ─── Row 1: dots + connectors ───
-                    if !isExpanded {
+                    if !expandCard {
                     HStack(spacing: 0) {
                         ForEach(progress.steps.indices, id: \.self) { index in
                             if index%2 == 0 {
@@ -746,7 +768,7 @@ struct CurrentOrderCard: View {
                                         .onAppear {
                                             startRepeatingAnimation()
                                         }
-                                        .onChange(of: isExpanded) { _ in
+                                        .onChange(of: expandCard) { _ in
                                             startRepeatingAnimation()
                                         }
                                     }else if (index < progress.currentStep) {
@@ -785,11 +807,11 @@ struct CurrentOrderCard: View {
             Spacer()
             }
         }
-        .frame(width: UIScreen.main.bounds.width*0.85, height: isExpanded ? UIScreen.main.bounds.height*0.5 : UIScreen.main.bounds.height*0.2)
-        .animation(.easeInOut(duration: 0.3), value: isExpanded)
+        .frame(width: UIScreen.main.bounds.width*0.85, height: expandCard ? UIScreen.main.bounds.height*0.5 : UIScreen.main.bounds.height*0.2)
+        .animation(.easeInOut(duration: 0.3), value: expandCard)
         .onTapGesture {
-            isExpanded.toggle()
-            if isExpanded {
+            expandCard.toggle()
+            if expandCard {
                 // Show text after animation starts
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.27) {
                     showExpandedContent = true

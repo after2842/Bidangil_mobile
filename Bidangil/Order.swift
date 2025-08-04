@@ -83,6 +83,7 @@ struct CustomFormView: View {
     @State private var items: [OrderItem] = [OrderItem()]
     @State private var errorMessage: String?
     @State private var errmessage: String = "한개 이상의 주문이 필요합니다."
+    @State private var isLoading: Bool = false
 
     private var completedItems: [OrderItem] {
         items.filter {
@@ -135,6 +136,7 @@ struct CustomFormView: View {
     
     //POST request with payload + JWT
     private func submitOrder(payload: [String: Any]) async {
+        isLoading = true
         guard let token = KeychainWrapper.standard.string(forKey: "access_token") else {
             print("❌ No access token found")
             return
@@ -180,6 +182,11 @@ struct CustomFormView: View {
             }
         } catch {
             print("❌ Error submitting order: \(error)")
+   
+        }
+        isLoading = false
+        DispatchQueue.main.async {
+            self.currentView = "main"
         }
     }
     
@@ -285,6 +292,7 @@ struct CustomFormView: View {
 
                }
                .animation(.easeInOut(duration: 0.35), value: step)
+               .disabled(isLoading)
               
 
 
@@ -342,7 +350,9 @@ struct CustomFormView: View {
                             .foregroundColor(.white)
                             .cornerRadius(100)
                     }else if step == 4{
-      
+                        if isLoading{
+                            ProgressView()
+                        }else{
                             
                             Text("신청하기")
                             .frame(maxWidth: .infinity)
@@ -353,7 +363,7 @@ struct CustomFormView: View {
                                                   opacity: 0.925))
                                 .foregroundColor(.white)
                                 .cornerRadius(100)
-                        
+                        }                        
 
                     }
 

@@ -26,9 +26,9 @@ struct BidangilApp: App {
             case "main":
                 Group {
                     if let profile = sessionManager.profile {
-                        MainView(currentView: $currentView, nickname: $sessionManager.nickname, orders: $sessionManager.orders)
+                        MainView(currentView: $currentView, nickname: $sessionManager.nickname, orders: $sessionManager.orders, sessionManager: sessionManager)
                     } else {
-                        MainView(currentView: $currentView, nickname: $sessionManager.nickname, orders: $sessionManager.orders)
+                        MainView(currentView: $currentView, nickname: $sessionManager.nickname, orders: $sessionManager.orders, sessionManager: sessionManager)
                             .task {
                                 print("Fetching profile data...")
                                 await sessionManager.fetchProfileData()
@@ -39,7 +39,7 @@ struct BidangilApp: App {
             case "order":
                 Order(currentView: $currentView)
             default:
-                MainView(currentView: $currentView, nickname: .constant(""), orders: .constant([]))
+                MainView(currentView: $currentView, nickname: .constant(""), orders: .constant([]), sessionManager: sessionManager)
             }
         }
     }

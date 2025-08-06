@@ -888,14 +888,30 @@ struct CheckoutView: View {
     @State private var paymentSheet: PaymentSheet?
     @State private var isLoading = false
     @State private var alert: AlertItem?
+    @State private var glowAnimation = false
     @Binding var currentStep: Int
     @Binding var paymentInfo: Int
     var body: some View {
         if currentStep == 1 && paymentInfo == 1 {
             Button(action: { loadPaymentSheet() }) {
-                RoundedRectangle(cornerRadius: 8)
-                    .fill(Color.blue)
-                    .frame(width: UIScreen.main.bounds.width*0.41, height: 50)
+                ZStack {
+                    RoundedRectangle(cornerRadius: 8)
+                        .fill(Color(UIColor.systemGray6).opacity(1.0))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 8)
+                                .stroke(Color.blue, lineWidth: 0.7)
+                                .shadow(color: .blue, radius: glowAnimation ? 3 : 1, x: 0, y: 0)
+                                .animation(.easeInOut(duration: 1.5).repeatForever(autoreverses: true), value: glowAnimation)
+                        )
+                        .onAppear {
+                            glowAnimation = true
+                        }
+                    
+                    Text("결제하기")
+                        .font(.headline)
+                        .foregroundColor(.black)
+                }
+                .frame(width: UIScreen.main.bounds.width*0.41, height: 50)
             }
             .disabled(isLoading)
             .alert(item: $alert) { $0.alert }
@@ -903,7 +919,7 @@ struct CheckoutView: View {
         if currentStep == 3 && paymentInfo == 3 {
             Button(action: { loadPaymentSheet() }) {
                 RoundedRectangle(cornerRadius: 8)
-                    .fill(Color.blue)
+                    .fill(Color.blue.opacity(0.2))
                     .frame(width: UIScreen.main.bounds.width*0.41, height: 50)
             }
             .disabled(isLoading)

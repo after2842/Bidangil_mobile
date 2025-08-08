@@ -79,13 +79,159 @@ struct PaymentButton: View {
     }
 }
 
+public func formatOrderAddress(address: String) -> (String, String, String) {
+    let components = address.components(separatedBy: "\n")
+    let filteredComponents = components.filter { !$0.trimmingCharacters(in: .whitespaces).isEmpty }
+    guard filteredComponents.count >= 3 else {
+        return ("주소 정보 로딩 중...", "", "")
+    }
+
+    if filteredComponents.count == 5 {
+        let firstPart: String = filteredComponents[0]
+        let secondPart: String = filteredComponents[1]
+        let thirdPart:[String] = Array(filteredComponents.suffix(3))
+        return (firstPart, secondPart, thirdPart.joined(separator: ", "))
+    }
+    if filteredComponents.count == 4 {
+        let firstPart: String = filteredComponents[0]
+        let secondPart: String = Array(filteredComponents.suffix(3)).joined(separator: ", ")
+        let thirdPart: String = ""
+        return (firstPart, secondPart, thirdPart)
+    }
+    return ("주소 정보 로딩 중...", "", "")
+}
+
 struct PastOrderCard: View {
+    @Binding var order: OrderData
+    @State private var showExpandedContent: Bool = false
     var body: some View{
-        ZStack(alignment: .topTrailing){
+        ZStack(alignment: .leading){
             Color.white.ignoresSafeArea()
-            VStack(alignment: .leading, spacing: 16){
-                HStack{
-                    Spacer()
+
+            ZStack(alignment: .leading){
+                RoundedRectangle(cornerRadius: 12)
+                .fill(Color(white: 0.95))
+                .frame(width: UIScreen.main.bounds.width*0.9, height: showExpandedContent ? UIScreen.main.bounds.height*0.33 : UIScreen.main.bounds.height*0.15)
+                .overlay(
+                    HStack {
+                        Spacer()
+                        Rectangle()
+                            .fill(order.Steps?.last?.isDone ?? false ? Color(hue: 0.574,
+                                    saturation: 0.871,
+                                    brightness: 0.935,
+                                    opacity: 0.925) : Color(white: 0.95))
+                            .frame(width: UIScreen.main.bounds.width*0.9 * 0.125) // 1/8 of the width
+                    }
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                )
+                .padding(.horizontal)
+                .onTapGesture {
+                    showExpandedContent.toggle()
+                }
+                if !showExpandedContent{
+                VStack(alignment: .leading){
+                Text("주문번호: \(order.id)")
+                    .font(.system(size: 10))
+                    .padding(.bottom, 10)
+                    .padding(.horizontal)
+                    .frame(maxWidth: .infinity, alignment: .center)
+                Text("주문상품: \(order.items.isEmpty ? "상품 정보 없음" : (order.items[0].description.count > 10 ? String(order.items[0].description.prefix(10)) + "..." : order.items[0].description) + "외 \(order.items.count-1)개")")
+                    .font(.system(size: 17))
+                    .padding(.leading, 15)       
+                    .padding(.bottom, 1)             
+                Text("주문일자: \(formatOrderDate(orderDate: order.order_created_at))")
+                    .font(.system(size: 17))
+                    .padding(.leading, 15)
+                    .padding(.bottom, 1)  
+                Text("주문상태: \(order.Steps?.last?.isDone ?? false ? "완료" : "진행중")")
+                    .font(.system(size: 17))
+                    .padding(.leading, 15)
+                    .foregroundColor(order.Steps?.last?.isDone ?? false ? .black : .blue)
+
+
+                }.padding().animation(.easeInOut(duration: 0.3), value: showExpandedContent)
+                }else{
+                    VStack(alignment: .leading, spacing: 16){
+                            HStack(alignment: .top){
+                            Text("주문일")
+                                .font(.headline)
+                                .foregroundColor(.black)
+                                .transition(.opacity)
+                            Spacer()
+                            Text("\(formatOrderDate(orderDate: order.order_created_at))")
+                                .font(.headline)
+                                .foregroundColor(.black)
+                                .transition(.opacity)
+                            }
+                            HStack(alignment: .top){
+                            Text("적용환율")
+                                .font(.headline)
+                                .foregroundColor(.black)
+                                .transition(.opacity)
+                            Spacer()
+                            Text("\(order.exchange_rate)원")
+                                .font(.headline)
+                                .foregroundColor(.black)
+                                .transition(.opacity)
+
+                            }
+                            HStack(alignment: .top){
+                            Text("배송주소")
+                                .font(.headline)
+                                .foregroundColor(.black)
+                                .transition(.opacity)
+                                
+                            Spacer()
+                            VStack(alignment: .trailing){
+                            Text("\(formatOrderAddress(address: order.address).0)")
+                                .font(.headline)
+                                .foregroundColor(.black)
+                                .transition(.opacity)
+                            Text("\(formatOrderAddress(address: order.address).1)")
+                                .font(.headline)
+                                .foregroundColor(.black)
+                                .transition(.opacity)     
+                                  
+                            Text("\(formatOrderAddress(address: order.address).2)")
+                                .font(.headline)
+                                .foregroundColor(.black)
+                                .transition(.opacity)
+                            }
+                              
+                            }
+                            Text("📦주문 상품").frame(maxWidth: .infinity, alignment: .center).font(.headline)
+                            .foregroundColor(.black).transition(.opacity)
+                            .padding(.top, 8)
+
+                            ScrollView(.vertical, showsIndicators: false){
+                            VStack(alignment: .leading, spacing: 4){
+                            ForEach(order.items) { item in
+                           
+                          
+                            VStack(alignment: .leading){
+                                Text(item.url.count > 30 ? String(item.url.prefix(30)) + "..." : item.url)
+                                    .font(.subheadline)
+                                    .foregroundColor(.black)
+                                    .transition(.opacity)
+                                Text(item.description)
+                                    .font(.subheadline)
+                                    .foregroundColor(.black)
+                                    .transition(.opacity)
+                            }.padding(.bottom, 4)
+                            
+                            
+                            
+                            }
+                            }
+                            }
+                            
+                        
+                       
+                    }
+                    .animation(.easeInOut(duration: 0.3), value: showExpandedContent)
+                    .frame(width: UIScreen.main.bounds.width*0.8, alignment: .center)
+                    .padding(.horizontal, 20)
+                    .padding(.vertical, 10)
                 }
             }
         }
@@ -97,6 +243,7 @@ struct ProfileMenuView: View {
     @State private var showOrderHistory = false
     @State private var showMyprofile = false
     @State private var showSettings = false
+    @Binding var orders: [OrderData]
     var body: some View {
         ZStack(alignment: .topTrailing) {
             Color.white.ignoresSafeArea()
@@ -138,7 +285,7 @@ struct ProfileMenuView: View {
                     }
                 }
                 .sheet(isPresented: $showOrderHistory) {
-                    OrderHistoryView(isPresented: $showOrderHistory)
+                    OrderHistoryView(isPresented: $showOrderHistory, orders: $orders)   
                 }   
                 Button(action: { showSettings = true }) {
                 HStack(){
@@ -191,6 +338,7 @@ struct ProfileMenuView: View {
 
 struct OrderHistoryView: View {
     @Binding var isPresented: Bool
+    @Binding var orders: [OrderData]
     var body: some View {
         ZStack(alignment: .topTrailing){
             Color.white.ignoresSafeArea()
@@ -210,9 +358,18 @@ struct OrderHistoryView: View {
         }
 
       
-            Text("주문 내역 페이지")
-                .font(.system(size: 20))
-                .padding()
+        ScrollView(showsIndicators: false){
+            VStack(spacing: 16){
+                if !orders.isEmpty {
+                    ForEach(orders, id: \.id) { order in
+                        PastOrderCard(order: .constant(order))
+                    }
+                } else {
+                    Text("주문 내역이 없습니다.")
+                        .foregroundColor(.gray)
+                }
+            }.padding(.top,16)
+        }
         }
         }
     }
@@ -298,6 +455,7 @@ struct MainView: View {
     @State private var paymentInfo: Int = 0
     @State private var showNotification: Bool = false
     @State private var expandCard: Bool = false
+    @State private var showPastOrder: Bool = false
 
     
     private var lastOrder: OrderData {
@@ -453,7 +611,49 @@ struct MainView: View {
                         }
                         
                         
-                        HStack{PaymentButton(title: "이전 주문", currentStep: $currentStep, paymentInfo: $paymentInfo, showNotification: $showNotification)
+                        HStack{
+                                ZStack {
+                                RoundedRectangle(cornerRadius: 12 )
+                                    .fill(Color(white: 0.95))
+                                    .frame(width: UIScreen.main.bounds.width*0.41, height: 50)
+                                
+                                Button(action: {
+                                    print("PastOrderButton tapped")
+                                    showPastOrder = true
+                                }) {
+                                    Text("지난 주문")
+                                        .font(.headline)
+                                        .foregroundColor(.black)
+                                        }.sheet(isPresented: $showPastOrder) {
+                                        VStack(spacing: 16){
+                                                HStack{
+                                                Spacer()
+                                            Image(systemName:"minus")
+                                                .resizable()
+                                                .frame(width: 32, height: 4)
+                                                .foregroundColor(.gray)
+                                                .padding()     
+                                                Spacer()
+                                            
+                                            }
+                                            ScrollView(showsIndicators: false){
+                                        VStack(spacing: 16){
+                                            if !orders.isEmpty {
+                                                ForEach(orders, id: \.id) { order in
+                                                    PastOrderCard(order: .constant(order))
+                                                }
+                                            } else {
+                                                
+                                                Text("주문 내역이 없습니다.")
+                                                    .foregroundColor(.gray)
+                                            }
+                                        }.padding(.top,16)
+                                            }
+                                        }
+                                    }
+
+
+                            }
                             PaymentButton(title:"결제", currentStep: $currentStep, paymentInfo: $paymentInfo, showNotification: $showNotification)}.animation(.easeInOut(duration: 0.3), value: expandCard)
                         
                         Spacer(minLength: 100)
@@ -544,7 +744,7 @@ struct MainView: View {
             updatePaymentInfo()
         }
         .fullScreenCover(isPresented: $togglemenu) {
-            ProfileMenuView(isPresented: $togglemenu)
+            ProfileMenuView(isPresented: $togglemenu, orders: $orders)
         }
         .fullScreenCover(isPresented: $showOrder) {
             Order(currentView: $currentView)
@@ -556,6 +756,19 @@ struct MainView: View {
     }
 }
 
+public func formatOrderDate(orderDate: String) -> String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd HH:mm:ss.SSSSSSxxx"
+        formatter.timeZone = TimeZone.current
+        
+        if let date = formatter.date(from: orderDate) {
+            let outputFormatter = DateFormatter()
+            outputFormatter.dateFormat = "MM.dd.yyyy"
+            outputFormatter.timeZone = TimeZone.current
+            return outputFormatter.string(from: date)
+        }
+        return orderDate
+    }
 
 
 struct OrderProgress {
@@ -592,19 +805,6 @@ struct CurrentOrderCard: View {
         }
     }
     
-    private var formattedDate: String {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "yyyy-MM-dd HH:mm:ss.SSSSSSxxx"
-        formatter.timeZone = TimeZone.current
-        
-        if let date = formatter.date(from: order.order_created_at) {
-            let outputFormatter = DateFormatter()
-            outputFormatter.dateFormat = "MM.dd.yyyy"
-            outputFormatter.timeZone = TimeZone.current
-            return outputFormatter.string(from: date)
-        }
-        return order.order_created_at
-    }
     
     private var formattedAddress: (String, String, String) {
         print("Debug - order.address: '\(order.address)'")
@@ -674,7 +874,7 @@ struct CurrentOrderCard: View {
                                 .foregroundColor(.white)
                                 .transition(.opacity)
                             Spacer()
-                            Text("\(formattedDate)")
+                            Text("\(formatOrderDate(orderDate: order.order_created_at))")
                                 .font(.headline)
                                 .foregroundColor(.white)
                                 .transition(.opacity)

@@ -73,8 +73,21 @@ struct PaymentButton: View {
                     .foregroundColor(.black)
             }
 
-            CheckoutView(currentStep: $currentStep, paymentInfo: $paymentInfo)
+            CheckoutView(currentStep: $currentStep, paymentInfo: $paymentInfo )
 
+        }
+    }
+}
+
+struct PastOrderCard: View {
+    var body: some View{
+        ZStack(alignment: .topTrailing){
+            Color.white.ignoresSafeArea()
+            VStack(alignment: .leading, spacing: 16){
+                HStack{
+                    Spacer()
+                }
+            }
         }
     }
 }

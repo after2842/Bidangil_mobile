@@ -104,29 +104,110 @@ public func formatOrderAddress(address: String) -> (String, String, String) {
 struct PastOrderCard: View {
     @Binding var order: OrderData
     @State private var showExpandedContent: Bool = false
+    @State private var currentStepString: String = ""
+    @State private var currentStep: Int = 1
+    @State private var paymentInfo: Int = 1
+    @State private var showNotification: Bool = false
+    @State private var isPaymentSheetPresented: Bool = false
+    
+    private var cardHeight: CGFloat {
+        if !showExpandedContent {
+            return UIScreen.main.bounds.height * 0.15
+        }
+        let needsPayment = currentStepString == "상품 결제 필요" || currentStepString == "배송비 결제 필요"
+        return needsPayment ? UIScreen.main.bounds.height * 0.5 : UIScreen.main.bounds.height * 0.36
+    }
+    
+    private var stripeColor: Color {
+        if showExpandedContent {
+            return Color(white: 0.95)
+        }
+        let isCompleted = order.Steps?.last?.isDone ?? false
+        return isCompleted ? Color(hue: 0.574, saturation: 0.871, brightness: 0.935, opacity: 0.925) : Color(white: 0.95)
+    }
+    
+    private var orderItemsText: String {
+        if order.items.isEmpty {
+            return "상품 정보 없음"
+        }
+        let description = order.items[0].description
+        let truncated = description.count > 10 ? String(description.prefix(10)) + "..." : description
+        return "\(truncated)외 \(order.items.count-1)개"
+    }
+
+    private func updateCurrentStep (order: OrderData) {
+        var count = 0
+        print("update currentstep called")
+
+        let orderPayment: PaymentData = order.Payment ?? PaymentData(item_price: nil, delivery_price: nil, total_price: nil, item_is_paid: false, delivery_is_paid: false, stripe_item_url: nil, stripe_delivery_url: nil)
+        for step: StepData in order.Steps ?? [] {
+            if step.isDone {
+                count += 1
+            }
+        }
+        if orderPayment.item_price != nil{
+            if orderPayment.delivery_price == nil && !orderPayment.item_is_paid{ //item payment required 
+            currentStepString = "상품 결제 필요"
+                currentStep = 1
+                paymentInfo = 1
+                return 
+      
+            } 
+            else if orderPayment.delivery_price != nil && !orderPayment.delivery_is_paid{ //delivery payment required
+                currentStepString = "배송비 결제 필요"
+                currentStep = 3
+                paymentInfo = 3
+                return 
+              
+            } 
+
+        }
+        switch count {
+        case 1:
+            currentStepString = "주문접수"
+            return 
+        case 2:
+            currentStepString = "상품 결제 완료"
+            return 
+        case 4:
+            currentStepString = "물건 도착"
+            return      
+        case 5:
+            currentStepString = "배송비 결제 완료"
+            return 
+        case 6:
+            currentStepString = "배송중"
+            return 
+        case 7:
+            currentStepString = "배송완료"
+            return 
+        default:
+            currentStepString = "진행중"
+            return 
+        }
+    }
     var body: some View{
         ZStack(alignment: .leading){
             Color.white.ignoresSafeArea()
 
-            ZStack(alignment: .leading){
+            ZStack(alignment: .center){
                 RoundedRectangle(cornerRadius: 12)
                 .fill(Color(white: 0.95))
-                .frame(width: UIScreen.main.bounds.width*0.9, height: showExpandedContent ? UIScreen.main.bounds.height*0.33 : UIScreen.main.bounds.height*0.15)
+                .frame(width: UIScreen.main.bounds.width*0.9, height: cardHeight)
                 .overlay(
                     HStack {
                         Spacer()
                         Rectangle()
-                            .fill(order.Steps?.last?.isDone ?? false ? Color(hue: 0.574,
-                                    saturation: 0.871,
-                                    brightness: 0.935,
-                                    opacity: 0.925) : Color(white: 0.95))
+                            .fill(stripeColor)
                             .frame(width: UIScreen.main.bounds.width*0.9 * 0.125) // 1/8 of the width
                     }
                     .clipShape(RoundedRectangle(cornerRadius: 12))
                 )
                 .padding(.horizontal)
                 .onTapGesture {
-                    showExpandedContent.toggle()
+                    withAnimation(.easeInOut(duration: 0.3)) {
+                        showExpandedContent.toggle()
+                    }
                 }
                 if !showExpandedContent{
                 VStack(alignment: .leading){
@@ -135,7 +216,7 @@ struct PastOrderCard: View {
                     .padding(.bottom, 10)
                     .padding(.horizontal)
                     .frame(maxWidth: .infinity, alignment: .center)
-                Text("주문상품: \(order.items.isEmpty ? "상품 정보 없음" : (order.items[0].description.count > 10 ? String(order.items[0].description.prefix(10)) + "..." : order.items[0].description) + "외 \(order.items.count-1)개")")
+                Text("주문상품: \(orderItemsText)")
                     .font(.system(size: 17))
                     .padding(.leading, 15)       
                     .padding(.bottom, 1)             
@@ -143,15 +224,15 @@ struct PastOrderCard: View {
                     .font(.system(size: 17))
                     .padding(.leading, 15)
                     .padding(.bottom, 1)  
-                Text("주문상태: \(order.Steps?.last?.isDone ?? false ? "완료" : "진행중")")
+                Text("주문상태: \(currentStepString)")
                     .font(.system(size: 17))
                     .padding(.leading, 15)
-                    .foregroundColor(order.Steps?.last?.isDone ?? false ? .black : .blue)
+                    .foregroundColor(currentStepString == "배송완료" ? .blue : .black)
 
 
                 }.padding().animation(.easeInOut(duration: 0.3), value: showExpandedContent)
                 }else{
-                    VStack(alignment: .leading, spacing: 16){
+                    VStack(alignment: .center, spacing: 16){
                             HStack(alignment: .top){
                             Text("주문일")
                                 .font(.headline)
@@ -162,7 +243,7 @@ struct PastOrderCard: View {
                                 .font(.headline)
                                 .foregroundColor(.black)
                                 .transition(.opacity)
-                            }
+                            }.padding(.top, 12)
                             HStack(alignment: .top){
                             Text("적용환율")
                                 .font(.headline)
@@ -209,7 +290,7 @@ struct PastOrderCard: View {
                            
                           
                             VStack(alignment: .leading){
-                                Text(item.url.count > 30 ? String(item.url.prefix(30)) + "..." : item.url)
+                                Text(item.url.count > 35 ? String(item.url.prefix(30)) + "..." : item.url)
                                     .font(.subheadline)
                                     .foregroundColor(.black)
                                     .transition(.opacity)
@@ -222,17 +303,22 @@ struct PastOrderCard: View {
                             
                             
                             }
-                            }
-                            }
+                            }.padding(.bottom, 12)
+                            }.frame(width: UIScreen.main.bounds.width*0.8, height: UIScreen.main.bounds.height*0.1, alignment: .topLeading)
                             
-                        
+                        if currentStepString == "상품 결제 필요"{
+                            PaymentButton(title: "상품 결제", currentStep: $currentStep, paymentInfo: $paymentInfo, showNotification: $showNotification)
+                        }else if currentStepString == "배송비 결제 필요"{
+                            PaymentButton(title: "배송비 결제", currentStep: $currentStep, paymentInfo: $paymentInfo, showNotification: $showNotification)
+                        }
                        
                     }
                     .animation(.easeInOut(duration: 0.3), value: showExpandedContent)
                     .frame(width: UIScreen.main.bounds.width*0.8, alignment: .center)
-                    .padding(.horizontal, 20)
-                    .padding(.vertical, 10)
+                    .padding()
                 }
+            }.onAppear{
+               updateCurrentStep(order: order)
             }
         }
     }
@@ -361,7 +447,7 @@ struct OrderHistoryView: View {
         ScrollView(showsIndicators: false){
             VStack(spacing: 16){
                 if !orders.isEmpty {
-                    ForEach(orders, id: \.id) { order in
+                    ForEach(orders.reversed(), id: \.id) { order in
                         PastOrderCard(order: .constant(order))
                     }
                 } else {
@@ -639,7 +725,7 @@ struct MainView: View {
                                             ScrollView(showsIndicators: false){
                                         VStack(spacing: 16){
                                             if !orders.isEmpty {
-                                                ForEach(orders, id: \.id) { order in
+                                                ForEach(orders.reversed(), id: \.id) { order in
                                                     PastOrderCard(order: .constant(order))
                                                 }
                                             } else {
@@ -1142,6 +1228,11 @@ struct CheckoutView: View {
 
     /// 1️⃣ Talk to Django
     private func loadPaymentSheet() {
+        print("🔄 loadPaymentSheet called - currentStep: \(currentStep), paymentInfo: \(paymentInfo)")
+        guard !isLoading else { 
+            print("❌ Already loading, skipping...")
+            return 
+        }
         isLoading = true
         Task {
             do {
@@ -1164,10 +1255,23 @@ struct CheckoutView: View {
                 isLoading = false
 
                 /// 3️⃣ Present
+                print("🎯 Attempting to present payment sheet...")
+                
+                // Find the topmost view controller
+                func findTopViewController() -> UIViewController? {
+                    guard let root = UIApplication.shared.firstKeyWindow?.rootViewController else { return nil }
+                    var current = root
+                    while let presented = current.presentedViewController {
+                        current = presented
+                    }
+                    return current
+                }
+                
                 if let sheet = paymentSheet,
-                   let root = UIApplication.shared.firstKeyWindow?.rootViewController {
-                    root.modalPresentationStyle = .fullScreen
-                    sheet.present(from: root) { result in
+                   let topVC = findTopViewController() {
+                    print("✅ Presenting from topmost view controller...")
+                    DispatchQueue.main.async {
+                        sheet.present(from: topVC) { result in
                         switch result {
                         case .completed:
                             alert = .init(title: "Paid ✓")
@@ -1176,9 +1280,13 @@ struct CheckoutView: View {
                         case .failed(let error):
                             alert = .init(title: "Payment failed", message: error.localizedDescription)
                         }
+                        }
                     }
+                } else {
+                    print("❌ Failed to present - sheet: \(paymentSheet != nil), topVC: \(findTopViewController() != nil)")
                 }
             } catch {
+                print("❌ Error in loadPaymentSheet: \(error)")
                 isLoading = false
                 alert = .init(title: "Error", message: error.localizedDescription)
             }
